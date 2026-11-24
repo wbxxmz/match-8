@@ -65,6 +65,88 @@ VIDEO_FPS = 15
 VIDEO_STRIDE = 4
 VIDEO_CODEC = "mp4v"
 
+# 接触报告：只认 PhysX 上报的真实碰撞对，作为“碰到”的客观证据。
+CONTACT_MIN_IMPULSE = 1e-6   # 冲量下限（N·s），滤掉数值噪声
+CONTACT_MAX_SEPARATION = 0.001  # 允许的最大分离距离（米），超过即视为未接触
+
+
+class ContactMonitor:
+    """订阅 PhysX 接触报告，按当前测例记录目标玩具与意外碰撞。
+
+    PhysX 只对挂了 PhysxContactReportAPI 的刚体上报接触。机器人各连杆与三个玩具都挂上，
+    阈值设 0（默认阈值会漏掉轻触），回调里只保留“有机器人连杆参与”且冲量、分离距离达标的事件。
+    """
+
+    def __init__(self, stage, robot_root, toy_paths):
+        import omni.physx
+        from pxr import PhysicsSchemaTools, PhysxSchema, UsdPhysics
+
+        self.robot_root = robot_root
+        self.toy_paths = set(toy_paths)
+        self.actor_path = PhysicsSchemaTools.intToSdfPath
+        self.target_path = None
+        self.target = None
+        self.unexpected = []
+        self.events = 0
+        for prim in stage.Traverse():
+            path = str(prim.GetPath())
+            if not prim.HasAPI(UsdPhysics.RigidBodyAPI):
+                continue
+            if path.startswith(robot_root + "/") or path in self.toy_paths:
+                PhysxSchema.PhysxContactReportAPI.Apply(prim).CreateThresholdAttr(0.0)
+        self.subscription = (
+            omni.physx.get_physx_simulation_interface()
+            .subscribe_contact_report_events(self.record)
+        )
+
+    def begin(self, toy_path):
+        """一个测例开始前重置，只记该玩具的首次有效接触。"""
+        self.target_path = toy_path
+        self.target = None
+        self.unexpected = []
+        self.events = 0
+
+    def record(self, headers, data):
+        for header in headers:
+            actors = [str(self.actor_path(actor)) for actor in (header.actor0, header.actor1)]
+            if not any(actor.startswith(self.robot_root + "/") for actor in actors):
+                continue
+            # 轮子压地、底盘蹭地不是我们要的证据
+            if any("CollisionPlane" in actor or "GroundPlane" in actor for actor in actors) and any(
+                "/wheels/" in actor or actor.endswith("/base_link") for actor in actors
+            ):
+                continue
+            intended = self.target_path in actors and any(
+                actor.startswith(self.robot_root + "/gripper/") for actor in actors
+            )
+            other_toys = [a for a in actors if a in self.toy_paths and a != self.target_path]
+            offset = header.contact_data_offset
+            for index in range(offset, offset + header.num_contact_data):
+                point = data[index]
+                impulse = float(np.linalg.norm(point.impulse))
+                separation = float(point.separation)
+                if impulse <= CONTACT_MIN_IMPULSE or separation > CONTACT_MAX_SEPARATION:
+                    continue
+                self.events += 1
+                event = {
+                    "actors": actors,
+                    "point_world_m": [round(float(v), 4) for v in point.position],
+                    "impulse_ns": round(impulse, 6),
+                    "separation_m": round(separation, 6),
+                }
+                if intended and self.target is None:
+                    self.target = event
+                if other_toys:
+                    self.unexpected.append({"toy": other_toys[0], **event})
+                break
+
+    def stop(self):
+        try:
+            self.subscription.unsubscribe()
+        except Exception:  # 关闭阶段 PhysX 可能已释放
+            pass
+
+
 
 def find_scene(explicit=None):
     """定位 abr_scene.usd：参数 > 环境变量 > 从作品目录逐级向上找 sim/。"""
@@ -164,6 +246,8 @@ def main():
     if stage is None or not stage.GetPrimAtPath(ROBOT_ROOT):
         raise RuntimeError("场景加载失败或缺少 robot_root")
     print("STAGE_OK", stage.GetDefaultPrim().GetPath(), flush=True)
+    contact_monitor = ContactMonitor(stage, ROBOT_ROOT, TOY_PRIMS.values())
+    print("CONTACT_REPORT_ON", len(TOY_PRIMS), "个玩具", flush=True)
 
     if not args.headless:
         # 图形窗口里把视口相机对准机器人工作区，否则默认视角看不到三个玩具。
@@ -465,6 +549,7 @@ def main():
         name = record["name"]
         case_id = record["id"]
         print(f"\n=== {case_id} ({name}) ===", flush=True)
+        contact_monitor.begin(TOY_PRIMS[name])
 
         initial = planner.full_state(record["joint_state"])
         teleport(initial)
@@ -573,9 +658,21 @@ def main():
         toy_shift = float(np.linalg.norm(
             planner.toy_transform_in_base(base_pose, toy_pose(name))[:3, 3] - toy_before
         ))
-        # 触碰的物理证据：指关节被夹住（侧向挤压）、下降触底停顿（顶面压住）、或玩具被推离原位。
+        # 触碰的物理证据：PhysX 上报的真实碰撞对，或指关节被夹住、下降触底停顿、玩具被推离原位。
         # 指力矩测不到“自上而下压”，因为力沿指连杆方向，不绕指关节轴。
+        sensor_event = contact_monitor.target
         contact = effort > EFFORT_CONTACT or rebound or toy_shift > TOY_DISPLACEMENT
+        if sensor_event is not None:
+            print(
+                f"  PhysX 接触对 {sensor_event['actors']} "
+                f"分离 {sensor_event['separation_m']:.6f} m，"
+                f"冲量 {sensor_event['impulse_ns']:.6f} N·s",
+                flush=True,
+            )
+        else:
+            print(f"  PhysX 接触 未上报（本测例共 {contact_monitor.events} 个有效接触点）", flush=True)
+        if contact_monitor.unexpected:
+            print(f"  意外接触 {contact_monitor.unexpected[0]['actors']}", flush=True)
         print(
             f"接触距离 {current_distance:.4f} m（合拢前 {before_close:.4f} m，最优 {best_distance:.4f} m，"
             f"触底回升 {'是' if rebound else '否'}，峰值指力矩 {effort:.3f} N·m，"
@@ -612,13 +709,13 @@ def main():
         toy_in_base = planner.toy_transform_in_base(base_pose, toy_pose(name))
         toy_in_objects = planner.toy_pose_in_objects(objects_in_base, toy_in_base)
         touch_distance = float(np.linalg.norm(toy_in_base[:3, 3] - objects_in_base[:3, 3]))
-        # 触碰判据：物理证据（回升/力矩/位移）优先；距离判据用玩具包络半径兜底，
-        # 因为 objects_link 是掌部参考点，固定 3 cm 对 5.8 cm 的魔方本来就不可能。
+        # 触碰判据：PhysX 接触报告或物理证据（回升/力矩/位移）优先；距离只会让判定更严，
+        # 不再单独判 PASS——距离近不等于碰到。
         distance_limit = max(TOUCH_DISTANCE, toy_radius)
-        passed = contact or touch_distance <= distance_limit
+        passed = contact or sensor_event is not None
         print(
-            f"完成：最终距离 {touch_distance:.4f} m，指力矩 {effort:.3f} N·m，"
-            f"USD/FK 偏差 {usd_delta:.5f} m，{'PASS' if passed else 'FAIL'}",
+            f"完成：最终距离 {touch_distance:.4f} m（几何参考上限 {distance_limit:.4f} m），"
+            f"指力矩 {effort:.3f} N·m，USD/FK 偏差 {usd_delta:.5f} m，{'PASS' if passed else 'FAIL'}",
             flush=True,
         )
 
@@ -629,7 +726,9 @@ def main():
             "scene_object_in_objects_link": planner.pose_in_parent(toy_in_objects),
             "touch_distance_m": round(touch_distance, 6),
             "min_distance_m": round(min(best_distance, touch_distance), 6),
-            "contact_detected": bool(contact),
+            "contact_detected": bool(passed),
+            "physx_contact": sensor_event,
+            "unexpected_contact": contact_monitor.unexpected[0] if contact_monitor.unexpected else None,
             "finger_effort_nm": round(effort, 4),
             "toy_displacement_m": round(toy_shift, 6),
             "initial_state_error_max": round(initial_error, 6),
@@ -649,12 +748,16 @@ def main():
 
     print("\n结果汇总：", flush=True)
     for item in results:
+        sensor = "有" if item["physx_contact"] else "无"
         print(
             f"  {item['id']}: 最终距离 {item['touch_distance_m']:.4f} m，"
-            f"接触 {item['contact_detected']}，指力矩 {item['finger_effort_nm']:.3f} N·m，"
+            f"接触 {item['contact_detected']}，PhysX 接触报告 {sensor}，"
+            f"指力矩 {item['finger_effort_nm']:.3f} N·m，"
             f"玩具位移 {item['toy_displacement_m'] * 1000:.1f} mm",
             flush=True,
         )
+
+    contact_monitor.stop()
 
     # 图形模式下保持窗口一段时间，方便看清最后一个玩具的最终姿态；
     # 无窗口模式立即退出，避免影响批量运行。
