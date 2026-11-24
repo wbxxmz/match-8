@@ -79,7 +79,8 @@ yanjiahao-luoyubin/
 ├── answers/q2_demo_output.jsonl
 ├── answers/q3_demo_output.jsonl
 ├── docs/                     # 截图等补充材料
-└── assets/                   # 终端日志与演示视频
+├── assets/                   # 终端日志
+└── video/                    # 演示视频（单个文件不超过 30 MB）
 ```
 
 ## 题目一：关节分步驱动与 RViz 展示
@@ -179,7 +180,7 @@ bash ../validate-entry-submission.sh yanjiahao-luoyubin
 | 文件 | 内容 |
 | --- | --- |
 | `assets/q1.log` | 完整终端日志：launch 与 RViz 启动、驱动五段关键帧输出（49 行，0 条 error） |
-| `assets/q1_rviz.mp4` | RViz 演示视频：48 秒、1920×1200、15 fps，mp4（MPEG-4），全屏录制，覆盖零位到夹爪闭合的完整流程，左侧 Displays 面板文字可读 |
+| `video/q1_rviz.mp4` | RViz 演示视频：48 秒、1920×1200、15 fps，mp4（MPEG-4），全屏录制，覆盖零位到夹爪闭合的完整流程，左侧 Displays 面板文字可读 |
 
 ## 题目二：正向运动学与坐标变换
 
@@ -244,7 +245,7 @@ RViz 中橙色方块为场景物体，红色圆点为 `objects_link`，三色箭
 | --- | --- |
 | `assets/q2.log` | 完整终端日志：运行命令、关节链、写入结果与退出码 0 |
 | `assets/q2_viz.log` | 可视化终端日志：launch、RViz 与演示节点输出（63 行，0 条 error） |
-| `assets/q2_rviz.mp4` | 22 秒、1920×1200、15 fps，mp4（MPEG-4），全屏录制；机械臂在零位与演示姿态间往返，距离由 0.753 米变到 0.805 米 |
+| `video/q2_rviz.mp4` | 22 秒、1920×1200、15 fps，mp4（MPEG-4），全屏录制；机械臂在零位与演示姿态间往返，距离由 0.753 米变到 0.805 米 |
 
 ### 内置模型副本来源
 
@@ -275,7 +276,7 @@ export OMNI_KIT_ACCEPT_EULA=YES ROS_DISTRO=humble
   --headless
 ```
 
-`python.sh` 换成自己的 Isaac Sim 4.5 安装路径即可。加 `--video assets/q3_touch.mp4` 会在无窗口模式下用独立相机同时录制触碰视频（需要 `opencv-python`）；去掉 `--headless` 则打开 Isaac Sim 图形窗口，视口自动对准三个玩具，可实时观看；`--scene` 省略时按 `BAJIE_SIM_ROOT`（指向 `sim/` 仓库根目录）或从作品目录逐级向上查找 `sim/scene/abr_scene.usd`。
+`python.sh` 换成自己的 Isaac Sim 4.5 安装路径即可。加 `--video video/q3_touch.mp4` 会在无窗口模式下用独立相机同时录制触碰视频（需要 `opencv-python`）；去掉 `--headless` 则打开 Isaac Sim 图形窗口，视口自动对准三个玩具，可实时观看；`--scene` 省略时按 `BAJIE_SIM_ROOT`（指向 `sim/` 仓库根目录）或从作品目录逐级向上查找 `sim/scene/abr_scene.usd`。
 
 ### 实现路径
 
@@ -375,7 +376,7 @@ PASS  题三答案、日志与视频自检通过
 | 文件 | 内容 |
 | --- | --- |
 | `assets/q3.log` | 完整终端日志：场景加载、底盘锁定、三个测例的初值误差、坐标核对、玩具包围盒、IK 残差、转运姿态、到位误差、距离曲线、判据、底盘位移、结果汇总与写入（435 行，0 条 error/warning） |
-| `assets/q3_touch.mp4` | Isaac Sim 触碰视频：1280×720、15 fps、38 秒（568 帧），mp4（MPEG-4），整条机械臂与三个玩具均入镜，可见斜向上转运、下降、两指夹住玩具的全过程 |
+| `video/q3_touch.mp4` | Isaac Sim 触碰视频：1280×720、15 fps、38 秒（568 帧），mp4（MPEG-4），整条机械臂与三个玩具均入镜，可见斜向上转运、下降、两指夹住玩具的全过程 |
 | `docs/q3_contact_sheet.png` | 上排三个接触特写（魔方 / 恐龙 / 软玩具），下为同刻全景；每格标出帧号与时间，红圈标出目标玩具 |
 | `docs/q3_contact_zoom.png` | 三张接触特写横排：两指夹住魔方、恐龙、软玩具，红圈标出目标玩具 |
 
@@ -388,7 +389,7 @@ PASS  题三答案、日志与视频自检通过
 | 00:25 | 夹住恐龙（第 370 帧） | 距离 0.0047 米，峰值力矩 0.430 N·m |
 | 00:37 | 夹住软玩具（第 560 帧） | 距离 0.0041 米，峰值力矩 0.291 N·m |
 
-录制视频的命令在上面基础上加 `--video assets/q3_touch.mp4`；相机位置与注视点固定在 `touch_toy.py` 顶部的 `VIDEO_EYE` / `VIDEO_TARGET`。四宫格与特写直接由这份视频抽帧生成（每 4 个物理步一帧，视频帧号 = 物理步数 ÷ 4），抽帧脚本不随作品提交。三个接触帧号是用像素距离核验过的：以停泊帧为参照取“相对运动的机械臂像素”，逐帧算它到三个玩具颜色中心的最近距离，并逐帧放大核对指尖与玩具的间隙，最终取 162 / 370 / 560（见 `docs/历史记录.md` H108–H111）。软玩具一格用的是手臂完全落到底之后的一帧：此时夹爪本体与近侧手指分别在玩具两侧，但腕部相机从画面上方遮住了手指与玩具的接触面，所以这一格不如魔方、恐龙两格直观；日志里同一次下降结束时的距离是 0.0017 米、合拢力矩 0.291 N·m。注意帧号只对 `assets/q3_touch.mp4` 这份视频有效，换一次重跑时序会变。
+录制视频的命令在上面基础上加 `--video video/q3_touch.mp4`；相机位置与注视点固定在 `touch_toy.py` 顶部的 `VIDEO_EYE` / `VIDEO_TARGET`。四宫格与特写直接由这份视频抽帧生成（每 4 个物理步一帧，视频帧号 = 物理步数 ÷ 4），抽帧脚本不随作品提交。三个接触帧号是用像素距离核验过的：以停泊帧为参照取“相对运动的机械臂像素”，逐帧算它到三个玩具颜色中心的最近距离，并逐帧放大核对指尖与玩具的间隙，最终取 162 / 370 / 560（见 `docs/历史记录.md` H108–H111）。软玩具一格用的是手臂完全落到底之后的一帧：此时夹爪本体与近侧手指分别在玩具两侧，但腕部相机从画面上方遮住了手指与玩具的接触面，所以这一格不如魔方、恐龙两格直观；日志里同一次下降结束时的距离是 0.0017 米、合拢力矩 0.291 N·m。注意帧号只对 `video/q3_touch.mp4` 这份视频有效，换一次重跑时序会变。
 
 ### 资源与风险
 
@@ -404,9 +405,9 @@ PASS  题三答案、日志与视频自检通过
 
 | 题 | 复现命令（作品根目录） | 预期结果 | 材料 |
 | --- | --- | --- | --- |
-| 一 | `python3 src/question1_project/check_output.py`、`python3 -m pytest -q src/question1_project/tests` | 打印 `[PASS]`；用例全部通过 | `assets/q1.log`、`assets/q1_rviz.mp4` |
-| 二 | `python3 -m pytest -q src/question2_project/tests` | 用例全部通过（与官方 `demo_zero` 差 < 1e-6） | `assets/q2.log`、`assets/q2_viz.log`、`assets/q2_rviz.mp4` |
-| 三 | `python3 src/question3_project/verify_q3.py`、`python3 -m pytest -q src/question3_project/tests` | 三个测例 PASS；用例全部通过 | `assets/q3.log`、`assets/q3_touch.mp4`、`docs/q3_contact_sheet.png`、`docs/q3_contact_zoom.png` |
+| 一 | `python3 src/question1_project/check_output.py`、`python3 -m pytest -q src/question1_project/tests` | 打印 `[PASS]`；用例全部通过 | `assets/q1.log`、`video/q1_rviz.mp4` |
+| 二 | `python3 -m pytest -q src/question2_project/tests` | 用例全部通过（与官方 `demo_zero` 差 < 1e-6） | `assets/q2.log`、`assets/q2_viz.log`、`video/q2_rviz.mp4` |
+| 三 | `python3 src/question3_project/verify_q3.py`、`python3 -m pytest -q src/question3_project/tests` | 三个测例 PASS；用例全部通过 | `assets/q3.log`、`video/q3_touch.mp4`、`docs/q3_contact_sheet.png`、`docs/q3_contact_zoom.png` |
 
 题三实测（headless，每次重跑数值有小幅浮动）：魔方最终距离 0.0055 米、指力矩 1.584 N·m；恐龙 0.0047 米、0.430 N·m；软玩具 0.0041 米、0.291 N·m。三例均满足触碰判据。视频与截图都是真实运行录制，未做任何合成。
 
@@ -418,14 +419,15 @@ PASS  题三答案、日志与视频自检通过
 | `src/question2_project/` | 题二 FK 实现（`urdf_chain.py`、`transforms.py`、`fk.py`）、读写入口、可选可视化、内置模型副本与用例 |
 | `src/question3_project/` | 题三规划（`planner.py`）、Isaac 控制（`touch_toy.py`）、离线自检与用例 |
 | `inputs/`、`answers/` | 官方示例输入与程序生成的答案，一一对应 |
-| `assets/` | 三份终端日志与三个演示视频（题二视频可选，仍一并提供） |
+| `assets/` | 三份终端日志 |
+| `video/` | 演示视频：`q1_rviz.mp4`（题目一 RViz）、`q3_touch.mp4`（题目三 Isaac Sim 触碰）、`q2_rviz.mp4`（题目二可视化，可选，一并提供）；均为 MP4/MPEG-4，单个不超过 30 MB |
 | `docs/` | 题三接触证据图；`PROJECT.md` 为题二与题三的设计说明 |
 
 ## 已知限制与运行注意事项
 
 - 题三只做“触碰”，不做抓取搬运；魔方、恐龙、软玩具都停在原位附近。
 - 题三的证据图里，软玩具一格被腕部相机挡住手指，不如另两格直观；判据以日志数值为准。
-- README 中题三的帧号只对 `assets/q3_touch.mp4` 这一份视频有效，重跑后时序会变，需重新核验。
+- README 中题三的帧号只对 `video/q3_touch.mp4` 这一份视频有效，重跑后时序会变，需重新核验。
 - 宽抓方案尚未做图形模式对照；判据为阈值，headless 与 GUI 的小幅差异不影响结论。
 - 官方只给 `demo_zero` 一组金标，非零姿态靠单调性抽查与几何自检。
 - 底盘锁定是“每个物理步写回根位姿”的近似，不是物理固定关节；实测位移 0.0000 米。

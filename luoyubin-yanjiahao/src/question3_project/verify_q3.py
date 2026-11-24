@@ -174,7 +174,7 @@ def main():
         if re.search(r"error|warning", log_text, re.IGNORECASE):
             problems.append("日志含 error/warning")
 
-    video_path = ENTRY_ROOT / "assets/q3_touch.mp4"
+    video_path = ENTRY_ROOT / "video/q3_touch.mp4"
     if not video_path.is_file() or video_path.stat().st_size < MIN_VIDEO_BYTES:
         problems.append("缺少视频或视频过小")
 
