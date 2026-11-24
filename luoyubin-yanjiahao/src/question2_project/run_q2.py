@@ -28,6 +28,30 @@ URDF_ENV = "BAJIE_URDF_ROOT"
 DECIMALS = 6
 
 
+def environment_lines():
+    """打印复现所需的环境证据；拿不到的字段写 unknown，不影响正常流程。"""
+    import platform
+    import subprocess
+
+    def first(command):
+        try:
+            out = subprocess.run(command, capture_output=True, text=True, timeout=5).stdout.strip()
+            return out.splitlines()[0] if out else "unknown"
+        except Exception:  # 没有 git 也不报错
+            return "unknown"
+
+    import numpy
+
+    commit = first(["git", "-C", str(ENTRY_ROOT), "rev-parse", "--short", "HEAD"])
+    return [
+        f"环境  OS {platform.platform()}",
+        f"环境  Python {platform.python_version()}  numpy {numpy.__version__}",
+        f"环境  ROS_DISTRO {os.environ.get('ROS_DISTRO', 'unset')}  "
+        f"ROS_DOMAIN_ID {os.environ.get('ROS_DOMAIN_ID', 'unset')}",
+        f"环境  git {commit}",
+    ]
+
+
 def find_urdf_root(explicit=None):
     """定位官方 URDF 资源目录：参数 > 环境变量 > 外部 urdf/ > 作品内置副本。"""
     if explicit:
@@ -130,7 +154,11 @@ def main():
     args = parser.parse_args()
 
     records = load_records(args.input)
-    chain = load_chain(find_urdf_root(args.urdf_root))
+    urdf_root = find_urdf_root(args.urdf_root)
+    for line in environment_lines():
+        print(line, flush=True)
+    print(f"环境  模型 {urdf_root}", flush=True)
+    chain = load_chain(urdf_root)
     print("关节链：" + " → ".join(joint.name for joint in chain), flush=True)
 
     results = [run_record(record, chain) for record in records]

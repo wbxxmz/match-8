@@ -1,0 +1,8 @@
+$ /mnt/hbotdata/tmp/isaac-sim/python.sh src/question3_project/touch_toy.py --env-only
+环境  OS Linux-6.8.0-149-generic-x86_64-with-glibc2.35
+环境  Python 3.10.15  numpy 1.26.0
+环境  ROS_DISTRO unset  ROS_DOMAIN_ID unset
+环境  git 7b82cda
+环境  GPU NVIDIA GeForce RTX 4060 Laptop GPU, 580.178.04
+环境  Isaac Sim 4.5.0-rc.36+release.19112.f59b3005.gl
+退出码：0

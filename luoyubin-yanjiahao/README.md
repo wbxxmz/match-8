@@ -180,7 +180,7 @@ bash ../validate-entry-submission.sh yanjiahao-luoyubin
 
 | 文件 | 内容 |
 | --- | --- |
-| `assets/q1.log` | 完整终端日志：launch 与 RViz 启动、驱动五段关键帧输出（49 行，0 条 error） |
+| `assets/q1.log` | 完整终端日志：launch 与 RViz 启动、环境证据（OS / Python / ROS_DISTRO / git commit）、驱动五段关键帧输出（53 行，0 条 error） |
 | `video/q1_rviz.mp4` | RViz 演示视频：48 秒、1920×1200、15 fps，mp4（MPEG-4），全屏录制，覆盖零位到夹爪闭合的完整流程，左侧 Displays 面板文字可读 |
 
 ## 题目二：正向运动学与坐标变换
@@ -244,7 +244,7 @@ RViz 中橙色方块为场景物体，红色圆点为 `objects_link`，三色箭
 
 | 文件 | 内容 |
 | --- | --- |
-| `assets/q2.log` | 完整终端日志：运行命令、关节链、写入结果与退出码 0 |
+| `assets/q2.log` | 完整终端日志：运行命令、环境证据（OS / Python / numpy / ROS / git commit）、模型目录、关节链、写入结果与退出码 0 |
 | `assets/q2_viz.log` | 可视化终端日志：launch、RViz 与演示节点输出（63 行，0 条 error） |
 | `video/q2_rviz.mp4` | 22 秒、1920×1200、15 fps，mp4（MPEG-4），全屏录制；机械臂在零位与演示姿态间往返，距离由 0.753 米变到 0.805 米 |
 
@@ -379,6 +379,7 @@ PASS  题三答案、日志与视频自检通过
 
 | 文件 | 内容 |
 | --- | --- |
+| `assets/q3_env.log` | 环境证据（`--env-only` 只打印环境、不启动仿真，3 秒内退出）：Linux 6.8 / Python 3.10.15 / numpy 1.26.0 / git commit / RTX 4060 Laptop + 驱动 580.178.04 / Isaac Sim 4.5.0-rc.36+release.19112；该模式不加载 ROS，故 `ROS_DISTRO` 显示 unset |
 | `assets/q3.log` | 完整终端日志：场景加载、底盘锁定、三个测例的初值误差、坐标核对、玩具包围盒、IK 残差、转运姿态、到位误差、距离曲线、判据、PhysX 接触对（分离距离与冲量）、底盘位移、结果汇总与写入（462 行，0 条 error/warning） |
 | `video/q3_touch.mp4` | Isaac Sim 触碰视频：1280×720、15 fps、38 秒（568 帧），mp4（MPEG-4），整条机械臂与三个玩具均入镜，可见斜向上转运、下降、两指夹住玩具的全过程 |
 | `docs/q3_contact_sheet.png` | 上排三个接触特写（魔方 / 恐龙 / 软玩具），下为同刻全景；每格标出帧号与时间，红圈标出目标玩具 |
@@ -411,7 +412,7 @@ PASS  题三答案、日志与视频自检通过
 | --- | --- | --- | --- |
 | 一 | `python3 src/question1_project/check_output.py`、`python3 -m pytest -q src/question1_project/tests` | 打印 `[PASS]`；用例全部通过 | `assets/q1.log`、`video/q1_rviz.mp4` |
 | 二 | `python3 -m pytest -q src/question2_project/tests` | 用例全部通过（与官方 `demo_zero` 差 < 1e-6） | `assets/q2.log`、`assets/q2_viz.log`、`video/q2_rviz.mp4` |
-| 三 | `python3 src/question3_project/verify_q3.py`、`python3 -m pytest -q src/question3_project/tests` | 三个测例 PASS；用例全部通过 | `assets/q3.log`、`video/q3_touch.mp4`、`docs/q3_contact_sheet.png`、`docs/q3_contact_zoom.png` |
+| 三 | `python3 src/question3_project/verify_q3.py`、`python3 -m pytest -q src/question3_project/tests` | 三个测例 PASS；用例全部通过 | `assets/q3.log`、`assets/q3_env.log`、`video/q3_touch.mp4`、`docs/q3_contact_sheet.png`、`docs/q3_contact_zoom.png` |
 
 题三实测（headless，每次重跑数值有小幅浮动）：魔方最终距离 0.0054 米、指力矩 1.622 N·m；恐龙 0.0039 米、0.433 N·m；软玩具 0.0041 米、0.294 N·m。三例均满足触碰判据，且都有 PhysX 接触对上报。视频与截图都是真实运行录制，未做任何合成。
 

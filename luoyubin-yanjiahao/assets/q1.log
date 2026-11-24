@@ -1,44 +1,48 @@
-[INFO] [launch]: All log files can be found below /home/yjh/.ros/log/2026-11-24-12-30-58-235596-yjh-Legion-Y7000P-IRX9-319740
+[INFO] [launch]: All log files can be found below /home/yjh/.ros/log/2026-11-24-21-58-17-314017-yjh-Legion-Y7000P-IRX9-8830
 [INFO] [launch]: Default logging verbosity is set to INFO
-[INFO] [robot_state_publisher-1]: process started with pid [319742]
-[INFO] [rviz2-2]: process started with pid [319744]
-[INFO] [python3-3]: process started with pid [319746]
-[robot_state_publisher-1] [WARN] [1795494658.441115248] [kdl_parser]: The root link base_footprint has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
-[robot_state_publisher-1] [INFO] [1795494658.441514092] [robot_state_publisher]: got segment arm1_link
-[robot_state_publisher-1] [INFO] [1795494658.441589124] [robot_state_publisher]: got segment arm2_link
-[robot_state_publisher-1] [INFO] [1795494658.441593496] [robot_state_publisher]: got segment arm3_link
-[robot_state_publisher-1] [INFO] [1795494658.441596720] [robot_state_publisher]: got segment arm4_link
-[robot_state_publisher-1] [INFO] [1795494658.441599186] [robot_state_publisher]: got segment arm5_link
-[robot_state_publisher-1] [INFO] [1795494658.441601675] [robot_state_publisher]: got segment arm6_link
-[robot_state_publisher-1] [INFO] [1795494658.441604249] [robot_state_publisher]: got segment arm_base_link
-[robot_state_publisher-1] [INFO] [1795494658.441608651] [robot_state_publisher]: got segment base_footprint
-[robot_state_publisher-1] [INFO] [1795494658.441611173] [robot_state_publisher]: got segment base_link
-[robot_state_publisher-1] [INFO] [1795494658.441613531] [robot_state_publisher]: got segment base_scan
-[robot_state_publisher-1] [INFO] [1795494658.441615854] [robot_state_publisher]: got segment berxel_arm_base_link
-[robot_state_publisher-1] [INFO] [1795494658.441618411] [robot_state_publisher]: got segment berxel_upper_base_link
-[robot_state_publisher-1] [INFO] [1795494658.441621030] [robot_state_publisher]: got segment caster_back_link
-[robot_state_publisher-1] [INFO] [1795494658.441623584] [robot_state_publisher]: got segment caster_back_link2
-[robot_state_publisher-1] [INFO] [1795494658.441626163] [robot_state_publisher]: got segment caster_left_link
-[robot_state_publisher-1] [INFO] [1795494658.441628564] [robot_state_publisher]: got segment caster_left_link2
-[robot_state_publisher-1] [INFO] [1795494658.441630974] [robot_state_publisher]: got segment caster_right_link
-[robot_state_publisher-1] [INFO] [1795494658.441633382] [robot_state_publisher]: got segment caster_right_link2
-[robot_state_publisher-1] [INFO] [1795494658.441636395] [robot_state_publisher]: got segment gripper_left_link
-[robot_state_publisher-1] [INFO] [1795494658.441638739] [robot_state_publisher]: got segment gripper_link
-[robot_state_publisher-1] [INFO] [1795494658.441641270] [robot_state_publisher]: got segment gripper_right_link
-[robot_state_publisher-1] [INFO] [1795494658.441643636] [robot_state_publisher]: got segment head_pitch_link
-[robot_state_publisher-1] [INFO] [1795494658.441646414] [robot_state_publisher]: got segment head_wide_angle_link
-[robot_state_publisher-1] [INFO] [1795494658.441648831] [robot_state_publisher]: got segment infrared_link
-[robot_state_publisher-1] [INFO] [1795494658.441651151] [robot_state_publisher]: got segment lift_base_link
-[robot_state_publisher-1] [INFO] [1795494658.441654444] [robot_state_publisher]: got segment lift_link
-[robot_state_publisher-1] [INFO] [1795494658.441656811] [robot_state_publisher]: got segment line_laser_down_link
-[robot_state_publisher-1] [INFO] [1795494658.441659215] [robot_state_publisher]: got segment objects_link
-[robot_state_publisher-1] [INFO] [1795494658.441661582] [robot_state_publisher]: got segment royale_camera_optical_frame
-[robot_state_publisher-1] [INFO] [1795494658.441664020] [robot_state_publisher]: got segment tof_top_link
-[robot_state_publisher-1] [INFO] [1795494658.441666345] [robot_state_publisher]: got segment wheel_left_link
-[robot_state_publisher-1] [INFO] [1795494658.441668729] [robot_state_publisher]: got segment wheel_right_link
-[rviz2-2] [INFO] [1795494658.841510334] [rviz2]: Stereo is NOT SUPPORTED
-[rviz2-2] [INFO] [1795494658.841583148] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
-[rviz2-2] [INFO] [1795494658.880059870] [rviz2]: Stereo is NOT SUPPORTED
+[INFO] [robot_state_publisher-1]: process started with pid [8832]
+[INFO] [rviz2-2]: process started with pid [8834]
+[INFO] [python3-3]: process started with pid [8836]
+[python3-3] 环境  OS Linux-6.8.0-149-generic-x86_64-with-glibc2.35
+[python3-3] 环境  Python 3.10.12
+[python3-3] 环境  ROS_DISTRO humble  ROS_DOMAIN_ID unset
+[python3-3] 环境  git 7b82cda
+[robot_state_publisher-1] [WARN] [1795528697.498049804] [kdl_parser]: The root link base_footprint has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-1] [INFO] [1795528697.498438215] [robot_state_publisher]: got segment arm1_link
+[robot_state_publisher-1] [INFO] [1795528697.498502397] [robot_state_publisher]: got segment arm2_link
+[robot_state_publisher-1] [INFO] [1795528697.498508931] [robot_state_publisher]: got segment arm3_link
+[robot_state_publisher-1] [INFO] [1795528697.498513442] [robot_state_publisher]: got segment arm4_link
+[robot_state_publisher-1] [INFO] [1795528697.498517527] [robot_state_publisher]: got segment arm5_link
+[robot_state_publisher-1] [INFO] [1795528697.498521629] [robot_state_publisher]: got segment arm6_link
+[robot_state_publisher-1] [INFO] [1795528697.498525960] [robot_state_publisher]: got segment arm_base_link
+[robot_state_publisher-1] [INFO] [1795528697.498530522] [robot_state_publisher]: got segment base_footprint
+[robot_state_publisher-1] [INFO] [1795528697.498534781] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-1] [INFO] [1795528697.498538911] [robot_state_publisher]: got segment base_scan
+[robot_state_publisher-1] [INFO] [1795528697.498543052] [robot_state_publisher]: got segment berxel_arm_base_link
+[robot_state_publisher-1] [INFO] [1795528697.498547805] [robot_state_publisher]: got segment berxel_upper_base_link
+[robot_state_publisher-1] [INFO] [1795528697.498552219] [robot_state_publisher]: got segment caster_back_link
+[robot_state_publisher-1] [INFO] [1795528697.498556369] [robot_state_publisher]: got segment caster_back_link2
+[robot_state_publisher-1] [INFO] [1795528697.498560365] [robot_state_publisher]: got segment caster_left_link
+[robot_state_publisher-1] [INFO] [1795528697.498564603] [robot_state_publisher]: got segment caster_left_link2
+[robot_state_publisher-1] [INFO] [1795528697.498568754] [robot_state_publisher]: got segment caster_right_link
+[robot_state_publisher-1] [INFO] [1795528697.498573028] [robot_state_publisher]: got segment caster_right_link2
+[robot_state_publisher-1] [INFO] [1795528697.498577563] [robot_state_publisher]: got segment gripper_left_link
+[robot_state_publisher-1] [INFO] [1795528697.498581630] [robot_state_publisher]: got segment gripper_link
+[robot_state_publisher-1] [INFO] [1795528697.498585849] [robot_state_publisher]: got segment gripper_right_link
+[robot_state_publisher-1] [INFO] [1795528697.498590052] [robot_state_publisher]: got segment head_pitch_link
+[robot_state_publisher-1] [INFO] [1795528697.498594245] [robot_state_publisher]: got segment head_wide_angle_link
+[robot_state_publisher-1] [INFO] [1795528697.498598871] [robot_state_publisher]: got segment infrared_link
+[robot_state_publisher-1] [INFO] [1795528697.498603274] [robot_state_publisher]: got segment lift_base_link
+[robot_state_publisher-1] [INFO] [1795528697.498607362] [robot_state_publisher]: got segment lift_link
+[robot_state_publisher-1] [INFO] [1795528697.498611720] [robot_state_publisher]: got segment line_laser_down_link
+[robot_state_publisher-1] [INFO] [1795528697.498615946] [robot_state_publisher]: got segment objects_link
+[robot_state_publisher-1] [INFO] [1795528697.498620418] [robot_state_publisher]: got segment royale_camera_optical_frame
+[robot_state_publisher-1] [INFO] [1795528697.498624795] [robot_state_publisher]: got segment tof_top_link
+[robot_state_publisher-1] [INFO] [1795528697.498629209] [robot_state_publisher]: got segment wheel_left_link
+[robot_state_publisher-1] [INFO] [1795528697.498633538] [robot_state_publisher]: got segment wheel_right_link
+[rviz2-2] [INFO] [1795528697.819337161] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-2] [INFO] [1795528697.819397432] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-2] [INFO] [1795528697.838710112] [rviz2]: Stereo is NOT SUPPORTED
 [python3-3] 预热 8.0s 完成（官方零位），开始动作
 [python3-3] 关键帧 lift: lift_joint=0.178, pitch_joint=0.000, joint1=0.000, joint2=0.000, joint3=0.000, joint4=0.000, joint5=0.000, joint6=0.000, arm_finger_joint1=0.000, arm_finger_joint2=0.000
 [python3-3] 关键帧 head: lift_joint=0.178, pitch_joint=-0.290, joint1=0.000, joint2=0.000, joint3=0.000, joint4=0.000, joint5=0.000, joint6=0.000, arm_finger_joint1=0.000, arm_finger_joint2=0.000
@@ -46,4 +50,4 @@
 [python3-3] 关键帧 gripper_open: lift_joint=0.178, pitch_joint=-0.290, joint1=0.302, joint2=-0.457, joint3=-0.132, joint4=-0.134, joint5=-0.554, joint6=0.007, arm_finger_joint1=0.506, arm_finger_joint2=0.506
 [python3-3] 关键帧 gripper_close: lift_joint=0.178, pitch_joint=-0.290, joint1=0.302, joint2=-0.457, joint3=-0.132, joint4=-0.134, joint5=-0.554, joint6=0.007, arm_finger_joint1=0.000, arm_finger_joint2=0.000
 [python3-3] 已写入 1 行 -> /home/yjh/bajie-competition/competition/yanjiahao-luoyubin/answers/q1_demo_output.jsonl
-[INFO] [python3-3]: process has finished cleanly [pid 319746]
+[INFO] [python3-3]: process has finished cleanly [pid 8836]

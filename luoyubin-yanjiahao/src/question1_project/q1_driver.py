@@ -18,6 +18,7 @@ final_joint_state 与最后一个关键帧一致。
 import argparse
 import json
 import math
+import os
 import random
 import time
 from pathlib import Path
@@ -48,6 +49,28 @@ SAMPLING_RANGES = {
 
 def round6(value):
     return float(f"{value:.6f}")
+
+
+def environment_lines():
+    """打印复现所需的环境证据；拿不到的字段写 unknown，不影响正常流程。"""
+    import platform
+    import subprocess
+
+    def first(command):
+        try:
+            out = subprocess.run(command, capture_output=True, text=True, timeout=5).stdout.strip()
+            return out.splitlines()[0] if out else "unknown"
+        except Exception:  # 没有 git / nvidia-smi 也不报错
+            return "unknown"
+
+    commit = first(["git", "-C", str(Path(__file__).resolve().parents[2]), "rev-parse", "--short", "HEAD"])
+    return [
+        f"环境  OS {platform.platform()}",
+        f"环境  Python {platform.python_version()}",
+        f"环境  ROS_DISTRO {os.environ.get('ROS_DISTRO', 'unset')}  "
+        f"ROS_DOMAIN_ID {os.environ.get('ROS_DOMAIN_ID', 'unset')}",
+        f"环境  git {commit}",
+    ]
 
 
 def check_limits(state, limits):
@@ -276,6 +299,8 @@ def main():
     )
     args = parser.parse_args()
 
+    for line in environment_lines():
+        print(line, flush=True)
     limits = json.loads(Path(args.limits).read_text(encoding="utf-8"))
     driver = RosDriver() if args.ros else NullDriver()
     try:

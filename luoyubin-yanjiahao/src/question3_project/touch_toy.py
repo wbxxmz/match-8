@@ -223,6 +223,35 @@ def make_pose(transform):
     return {"xyz": [float(v) for v in transform[:3, 3]], "rpy": planner.pose_in_parent(transform)["rpy"]}
 
 
+def environment_lines():
+    """打印复现所需的环境证据；拿不到的字段写 unknown，不影响正常流程。"""
+    import platform
+    import subprocess
+
+    def first(command):
+        try:
+            out = subprocess.run(command, capture_output=True, text=True, timeout=5).stdout.strip()
+            return out.splitlines()[0] if out else "unknown"
+        except Exception:  # 没有 git / nvidia-smi 也不报错
+            return "unknown"
+
+    lines = [
+        f"环境  OS {platform.platform()}",
+        f"环境  Python {platform.python_version()}  numpy {np.__version__}",
+        f"环境  ROS_DISTRO {os.environ.get('ROS_DISTRO', 'unset')}  "
+        f"ROS_DOMAIN_ID {os.environ.get('ROS_DOMAIN_ID', 'unset')}",
+        f"环境  git {first(['git', '-C', str(ENTRY_ROOT), 'rev-parse', '--short', 'HEAD'])}",
+        f"环境  GPU {first(['nvidia-smi', '--query-gpu=name,driver_version', '--format=csv,noheader'])}",
+    ]
+    # Isaac Sim 安装目录带 VERSION 文件；从 python.sh 的 python 路径逐级向上找。
+    for parent in Path(sys.executable).resolve().parents:
+        version = parent / "VERSION"
+        if version.is_file():
+            lines.append(f"环境  Isaac Sim {version.read_text(encoding='utf-8').strip()}")
+            break
+    return lines
+
+
 def main():
     parser = argparse.ArgumentParser(description="题三：Isaac Sim 中触碰三个玩具")
     parser.add_argument("--scene", default=None, help="abr_scene.usd 路径")
@@ -231,6 +260,7 @@ def main():
     parser.add_argument("--urdf-root", default=None, help="官方 URDF 目录（缺省自动查找）")
     parser.add_argument("--headless", action="store_true", help="无窗口运行（生成答案用）")
     parser.add_argument("--video", default=None, help="同时录制视口视频到该路径（.mp4）")
+    parser.add_argument("--env-only", action="store_true", help="只打印环境证据后退出，不启动仿真")
     parser.add_argument(
         "--hold-sec",
         type=float,
@@ -240,6 +270,11 @@ def main():
     args, _ = parser.parse_known_args()
     # Kit 会解析 sys.argv，先把自定义参数摘掉，避免误判。
     sys.argv = [sys.argv[0]]
+
+    for line in environment_lines():
+        print(line, flush=True)
+    if args.env_only:
+        return
 
     scene_path = find_scene(args.scene)
     records = load_records(args.input)
