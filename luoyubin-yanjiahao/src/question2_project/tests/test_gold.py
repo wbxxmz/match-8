@@ -130,3 +130,16 @@ def test_answer_file(chain):
     for record, answer in zip(records, answers):
         expected = run_q2.run_record(record, chain)
         assert answer == expected
+
+
+def test_load_records_rejects_non_finite_pose(tmp_path):
+    """物体位姿含 nan/inf 必须在第 1 行报错，不能带进求解。"""
+    entry = PROJECT.parents[1]
+    record = run_q2.load_records(entry / "inputs" / "q2_demo_input.jsonl")[0]
+    for bad in (float("nan"), float("inf")):
+        broken = json.loads(json.dumps(record))
+        broken["scene_object_in_base_footprint"]["xyz"][0] = bad
+        path = tmp_path / "bad.jsonl"
+        path.write_text(json.dumps(broken) + "\n", encoding="utf-8")
+        with pytest.raises(ValueError, match=r"第 1 行.*非有限数值"):
+            run_q2.load_records(path)

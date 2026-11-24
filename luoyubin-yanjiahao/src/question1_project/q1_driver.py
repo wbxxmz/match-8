@@ -167,6 +167,8 @@ def load_records(path):
         for key in ("id", "step", "move_sec", "pause_sec"):
             if key not in record:
                 raise ValueError(f"{path} 第 {number} 行缺少字段 {key!r}")
+        if record["step"] != "all":
+            raise ValueError(f"{path} 第 {number} 行字段 'step' 只支持 'all'：{record['step']!r}")
         for key in ("move_sec", "pause_sec"):
             try:
                 value = float(record[key])

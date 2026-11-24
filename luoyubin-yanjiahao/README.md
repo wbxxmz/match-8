@@ -71,7 +71,8 @@ yanjiahao-luoyubin/
 │   ├── planner.py            # 底盘坐标变换、逆运动学、位姿换算（不依赖 Isaac）
 │   ├── touch_toy.py          # Isaac Sim 里置初值、下降触碰、合拢与写答案
 │   ├── verify_q3.py          # 离线自检：答案/FK/闭环/日志/视频，不依赖 Isaac
-│   └── tests/test_planner.py # 规划回归测试：变换闭环、FK、IK 残差、限位与另一组初值
+│   ├── tests/test_planner.py # 规划回归测试：变换闭环、FK、IK 残差、限位与另一组初值
+│   └── tests/test_touch_logic.py # 触碰判定口径与输入校验（未知玩具、缺字段、非有限位姿）
 ├── inputs/q1_demo_input.jsonl
 ├── inputs/q2_demo_input.jsonl
 ├── inputs/q3_demo_input.jsonl
@@ -149,7 +150,7 @@ python3 src/question1_project/check_output.py
 python3 -m pytest -q src/question1_project/tests
 ```
 
-预期输出 `6 passed`。覆盖：同 seed 确定性、换 seed 变化、采样值在限位内、限位校验拒绝越界/未知/缺失关节、五段结构与末帧一致、输入错误报行号。
+预期输出 `10 passed`。覆盖：同 seed 确定性、换 seed 变化、采样值在限位内、限位校验拒绝越界/未知/缺失关节、五段结构与末帧一致、输入错误报行号、非有限时长/小数 seed/非法 step 被拒。
 
 ### 行为说明
 
@@ -217,7 +218,7 @@ python3 src/question2_project/run_q2.py \
 python3 -m pytest -q src/question2_project/tests
 ```
 
-预期输出 `8 passed`。覆盖：关节链顺序（含头部/手指不在链上）、两个位姿与金标比对（`xyz` 差 `< 1e-4`）、正逆往返误差 `< 1e-6`、`rpy`/`quat_xyzw` 互转一致 `< 1e-6`、内置模型副本独立复现金标、缺关节或未知关节报错、答案逐行可解析且与重算一致。
+预期输出 `9 passed`。覆盖：关节链顺序（含头部/手指不在链上）、两个位姿与金标比对（`xyz` 差 `< 1e-4`）、正逆往返误差 `< 1e-6`、`rpy`/`quat_xyzw` 互转一致 `< 1e-6`、内置模型副本独立复现金标、缺关节或未知关节报错、位姿含 `nan`/`inf` 报错、答案逐行可解析且与重算一致。
 
 官方只提供 `demo_zero` 一组金标，非零姿态没有官方对照值。代码用单调性抽查做基本检查（`lift_joint` +0.2 米时 z 精确 +0.2），这不构成精度证明。
 
@@ -368,7 +369,7 @@ OK    touch_toy_3: 距离 0.0041 m（上限 0.0691），力矩 0.294 N·m，位�
 PASS  题三答案、日志与视频自检通过
 ```
 
-回归测试应输出 `15 passed`。Python 小版本、numpy 版本与场景/Isaac 路径随机器不同，属正常差异。
+回归测试应输出 `22 passed`。Python 小版本、numpy 版本与场景/Isaac 路径随机器不同，属正常差异。
 
 距离随物理细节小幅浮动，`contact_detected` 恒为 `True`。跑完会打印三行结果汇总；图形模式默认再保持窗口 90 秒，方便看清最后一个玩具的最终姿态，可用 `--hold-sec 0` 关闭或改时长。
 

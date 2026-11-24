@@ -70,6 +70,15 @@ CONTACT_MIN_IMPULSE = 1e-6   # 冲量下限（N·s），滤掉数值噪声
 CONTACT_MAX_SEPARATION = 0.001  # 允许的最大分离距离（米），超过即视为未接触
 
 
+def decide_touch(contact, sensor_event):
+    """触碰判定：力学证据或 PhysX 接触报告任一成立即 PASS，距离不参与。
+
+    距离近不等于碰到，所以 final 距离只作几何参考；答案里的 contact_detected
+    也用同一个结果，保证运行、自检与答案三处口径一致。
+    """
+    return bool(contact) or sensor_event is not None
+
+
 class ContactMonitor:
     """订阅 PhysX 接触报告，按当前测例记录目标玩具与意外碰撞。
 
@@ -186,10 +195,27 @@ def load_records(path):
             planner.full_state(record["joint_state"])
         except (KeyError, TypeError, ValueError) as exc:
             raise ValueError(f"{path} 第 {number} 行 joint_state 非法：{exc}") from exc
+        for key in ("base_footprint_in_world", "scene_object_in_world"):
+            check_pose(record[key], key, path, number)
         records.append(record)
     if not records:
         raise ValueError(f"{path} 没有任何有效行")
     return records
+
+
+def check_pose(pose, key, path, number):
+    """位姿必须是 {xyz:[3], rpy:[3]}，且每个数有限；否则报行号。"""
+    if not isinstance(pose, dict):
+        raise ValueError(f"{path} 第 {number} 行字段 {key!r} 应为对象")
+    for field in ("xyz", "rpy"):
+        values = pose.get(field)
+        if not isinstance(values, list) or len(values) != 3:
+            raise ValueError(f"{path} 第 {number} 行字段 {key}.{field} 应为 3 个数值的数组")
+        for item in values:
+            if isinstance(item, bool) or not isinstance(item, (int, float)):
+                raise ValueError(f"{path} 第 {number} 行字段 {key}.{field} 含非数值：{item!r}")
+            if not math.isfinite(item):
+                raise ValueError(f"{path} 第 {number} 行字段 {key}.{field} 含非有限数值：{item!r}")
 
 
 def make_pose(transform):
@@ -712,7 +738,7 @@ def main():
         # 触碰判据：PhysX 接触报告或物理证据（回升/力矩/位移）优先；距离只会让判定更严，
         # 不再单独判 PASS——距离近不等于碰到。
         distance_limit = max(TOUCH_DISTANCE, toy_radius)
-        passed = contact or sensor_event is not None
+        passed = decide_touch(contact, sensor_event)
         print(
             f"完成：最终距离 {touch_distance:.4f} m（几何参考上限 {distance_limit:.4f} m），"
             f"指力矩 {effort:.3f} N·m，USD/FK 偏差 {usd_delta:.5f} m，{'PASS' if passed else 'FAIL'}",

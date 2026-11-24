@@ -76,3 +76,20 @@ def test_load_records_reports_line(tmp_path):
     negative.write_text(json.dumps({**RECORD, "move_sec": -1}) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="不能为负"):
         q1_driver.load_records(negative)
+
+
+@pytest.mark.parametrize(
+    "patch, message",
+    [
+        ({"move_sec": "nan"}, "必须是有限数值"),
+        ({"pause_sec": "inf"}, "必须是有限数值"),
+        ({"seed": 7.9}, "必须是整数"),
+        ({"step": "single"}, "只支持 'all'"),
+    ],
+)
+def test_load_records_rejects_bad_values(tmp_path, patch, message):
+    """非有限时长、小数 seed、非法 step 都必须在第 1 行报错。"""
+    path = tmp_path / "bad.jsonl"
+    path.write_text(json.dumps({**RECORD, **patch}) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=rf"第 1 行.*{message}"):
+        q1_driver.load_records(path)
