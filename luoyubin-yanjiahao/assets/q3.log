@@ -1,0 +1,435 @@
+# 题三运行记录（作品根目录下执行，运行时目录名为 yanjiahao-luoyubin）
+# Isaac Sim 4.5.0-rc.36 + ROS 2 Humble，Ubuntu 22.04，NVIDIA 8 GB
+$ source /opt/ros/humble/setup.bash
+$ export OMNI_KIT_ACCEPT_EULA=YES ROS_DISTRO=humble
+$ /mnt/hbotdata/tmp/isaac-sim/python.sh src/question3_project/touch_toy.py \
+    --scene /home/yjh/bajie-competition/sim/scene/abr_scene.usd \
+    --input inputs/q3_demo_input.jsonl --output answers/q3_demo_output.jsonl \
+    --headless --video assets/q3_touch.mp4
+# 以下为程序输出；Isaac 引擎自身的警告（官方场景缺贴图）已省略
+场景： /home/yjh/bajie-competition/sim/scene/abr_scene.usd
+关节链： base_joint → lift_base_joint → lift_joint → arm_base_joint → joint1 → joint2 → joint3 → joint4 → joint5 → joint6 → gripper_joint → object_joint
+[Info] [carb] Logging to file: /mnt/hbotdata/tmp/isaac-sim/kit/logs/Kit/Isaac-Sim Python/4.5/kit_20261123_221112.log
+[0.041s] [ext: omni.kit.async_engine-0.0.1] startup
+[0.404s] [ext: omni.metrics.core-0.0.1] startup
+[0.404s] [ext: omni.client.lib-1.0.0] startup
+[0.426s] [ext: omni.blobkey-1.1.2] startup
+[0.426s] [ext: omni.stats-1.0.1] startup
+[0.427s] [ext: omni.datastore-0.0.0] startup
+[0.432s] [ext: omni.client-1.2.2] startup
+[0.438s] [ext: omni.ujitso.default-1.0.0] startup
+[0.439s] [ext: omni.hsscclient-1.1.1] startup
+[0.444s] [ext: omni.gpu_foundation.shadercache.vulkan-1.0.0] startup
+[0.446s] [ext: omni.assets.plugins-0.0.0] startup
+[0.447s] [ext: omni.gpu_foundation-0.0.0] startup
+[0.455s] [ext: carb.windowing.plugins-1.0.0] startup
+[0.513s] [ext: omni.kit.renderer.init-0.0.0] startup
+
+|---------------------------------------------------------------------------------------------|
+| Driver Version: 580.178.04    | Graphics API: Vulkan
+|=============================================================================================|
+| GPU | Name                             | Active | LDA | GPU Memory | Vendor-ID | LUID       |
+|     |                                  |        |     |            | Device-ID | UUID       |
+|     |                                  |        |     |            | Bus-ID    |            |
+|---------------------------------------------------------------------------------------------|
+| 0   | NVIDIA GeForce RTX 4060 Laptop.. | Yes: 0 |     | 8188    MB | 10de      | 0          |
+|     |                                  |        |     |            | 28e0      | c45800f1.. |
+|     |                                  |        |     |            | 1         |            |
+|---------------------------------------------------------------------------------------------|
+| 1   | Intel(R) Graphics (RPL-S)        |        |     | 11770   MB | 8086      | 0          |
+|     |                                  |        |     |            | a788      | 868088a7.. |
+|     |                                  |        |     |            | 0         |            |
+|=============================================================================================|
+| OS: 22.04.5 LTS (Jammy Jellyfish) ubuntu, Version: 22.04.5, Kernel: 6.8.0-149-generic
+| XServer Vendor: The X.Org Foundation, XServer Version: 12101004 (1.21.1.4)
+| Processor: Intel(R) Core(TM) i7-14700HX
+| Cores: 20 | Logical Cores: 28
+|---------------------------------------------------------------------------------------------|
+| Total Memory (MB): 15694 | Free Memory: 10155
+| Total Page/Swap (MB): 2047 | Free Page/Swap: 1974
+|---------------------------------------------------------------------------------------------|
+Unidirectional P2P=Enabled Bandwidth (P2P Writes) Matrix (GB/s)
+   D\D     0 
+     0 180.78 
+P2P=Enabled Latency (P2P Writes) Matrix (us)
+   GPU     0 
+     0   1.51 
+
+   CPU     0 
+     0   1.82 
+[1.378s] [ext: omni.kit.pipapi-0.0.0] startup
+[1.380s] [ext: omni.kit.pip_archive-0.0.0] startup
+[1.380s] [ext: omni.pip.compute-1.4.5] startup
+[1.380s] [ext: omni.materialx.libs-1.0.6] startup
+[1.388s] [ext: omni.kit.telemetry-0.5.1] startup
+[1.406s] [ext: omni.pip.cloud-1.1.7] startup
+[1.411s] [ext: omni.isaac.core_archive-2.3.3] startup
+[1.412s] [ext: omni.usd.config-1.0.5] startup
+[1.415s] [ext: omni.gpucompute.plugins-0.0.0] startup
+[1.415s] [ext: omni.usd.libs-1.0.1] startup
+[1.487s] [ext: omni.isaac.ml_archive-2.1.2] startup
+[1.487s] [ext: omni.mdl-55.0.1] startup
+[1.504s] [ext: omni.iray.libs-0.0.0] startup
+[1.508s] [ext: omni.mdl.neuraylib-0.2.10] startup
+[1.510s] [ext: omni.kit.usd.mdl-1.0.7] startup
+[1.598s] [ext: omni.kit.loop-isaac-1.2.1] startup
+[1.599s] [ext: omni.kit.test-1.1.2] startup
+[1.637s] [ext: omni.appwindow-1.1.9] startup
+[1.639s] [ext: omni.kit.renderer.core-1.0.2] startup
+[1.746s] [ext: omni.kit.renderer.capture-0.0.0] startup
+[1.748s] [ext: omni.kit.renderer.imgui-1.0.2] startup
+[1.866s] [ext: omni.ui-2.26.5] startup
+[1.875s] [ext: omni.kit.mainwindow-1.0.3] startup
+[1.876s] [ext: carb.audio-0.1.0] startup
+[1.878s] [ext: omni.uiaudio-1.0.0] startup
+[1.879s] [ext: omni.kit.uiapp-0.0.0] startup
+[1.879s] [ext: omni.usd.schema.metrics.assembler-106.5.0] startup
+[1.887s] [ext: omni.usd.schema.anim-0.0.0] startup
+[1.906s] [ext: omni.usd.schema.isaac-3.0.2] startup
+[1.906s] [ext: omni.usd.schema.geospatial-0.0.0] startup
+[1.908s] [ext: omni.usd.schema.physx-106.5.7] startup
+[1.935s] [ext: omni.usd.schema.audio-0.0.0] startup
+[1.938s] [ext: omni.usd.schema.semantics-0.0.0] startup
+[1.940s] [ext: omni.usd_resolver-1.0.0] startup
+[1.943s] [ext: usdrt.scenegraph-7.5.1] startup
+[1.978s] [ext: omni.kit.actions.core-1.0.0] startup
+[1.980s] [ext: omni.timeline-1.0.11] startup
+[1.982s] [ext: omni.usd.core-1.4.2] startup
+[1.984s] [ext: omni.resourcemonitor-107.0.0] startup
+[1.986s] [ext: omni.activity.core-1.0.1] startup
+[1.987s] [ext: omni.kit.audiodeviceenum-1.0.1] startup
+[1.988s] [ext: omni.hydra.usdrt_delegate-7.5.1] startup
+[1.997s] [ext: omni.graph.exec-0.9.4] startup
+[1.997s] [ext: omni.kit.window.popup_dialog-2.0.24] startup
+[2.001s] [ext: omni.kit.exec.core-0.13.4] startup
+[2.002s] [ext: omni.kit.widget.nucleus_connector-1.1.10] startup
+[2.004s] [ext: omni.kit.usd_undo-0.1.8] startup
+[2.004s] [ext: omni.kit.commands-1.4.9] startup
+[2.007s] [ext: omni.hydra.scene_delegate-0.3.3] startup
+[2.014s] [ext: omni.usd-1.12.4] startup
+[2.058s] [ext: omni.kit.asset_converter-2.8.3] startup
+[2.067s] [ext: omni.usd.schema.omniscripting-1.0.0] startup
+[2.071s] [ext: omni.usd.schema.omnigraph-1.0.0] startup
+[2.077s] [ext: omni.usd.schema.forcefield-106.5.7] startup
+[2.082s] [ext: isaacsim.robot.schema-3.1.2] startup
+[2.089s] [ext: omni.inspect-1.0.1] startup
+[2.090s] [ext: omni.kit.notification_manager-1.0.9] startup
+[2.091s] [ext: omni.graph.core-2.181.8] startup
+[2.093s] [ext: isaacsim.core.deprecation_manager-0.2.2] startup
+[2.094s] [ext: omni.index.libs-380600.1777.0] startup
+[2.094s] [ext: omni.ujitso.processor.texture-1.0.0] startup
+[2.095s] [ext: omni.index-1.0.1] startup
+[2.096s] [ext: omni.kit.widget.path_field-2.0.11] startup
+[2.096s] [ext: omni.volume-0.5.0] startup
+[2.101s] [ext: omni.ujitso.client-0.0.0] startup
+[2.101s] [ext: omni.hydra.rtx.shadercache.vulkan-1.0.0] startup
+[2.102s] [ext: omni.kit.widget.browser_bar-2.0.10] startup
+[2.103s] [ext: omni.kit.clipboard-1.0.5] startup
+[2.103s] [ext: omni.hydra.rtx-1.0.0] startup
+[2.123s] [ext: omni.kit.viewport.registry-104.0.6] startup
+[2.124s] [ext: omni.kit.helper.file_utils-0.1.9] startup
+[2.125s] [ext: omni.kit.widget.options_menu-1.1.6] startup
+[2.127s] [ext: omni.kit.menu.core-1.1.2] startup
+[2.128s] [ext: omni.kit.widget.filebrowser-2.10.52] startup
+[2.132s] [ext: omni.ui.scene-1.11.2] startup
+[2.135s] [ext: omni.kit.widget.options_button-1.0.3] startup
+[2.136s] [ext: omni.kit.widget.context_menu-1.2.4] startup
+[2.137s] [ext: omni.kit.viewport.legacy_gizmos-1.0.16] startup
+[2.139s] [ext: omni.kit.usd.layers-2.2.0] startup
+[2.147s] [ext: omni.kit.window.filepicker-2.11.7] startup
+[2.156s] [ext: omni.kit.hydra_texture-1.4.0] startup
+[2.160s] [ext: omni.kit.viewport.scene_camera_model-1.0.5] startup
+[2.164s] [ext: omni.kit.context_menu-1.8.3] startup
+[2.166s] [ext: omni.kit.window.file_importer-1.1.14] startup
+[2.167s] [ext: omni.kit.menu.utils-1.7.7] startup
+[2.174s] [ext: omni.kit.widget.viewport-107.0.7] startup
+[2.177s] [ext: omni.kit.window.drop_support-1.0.4] startup
+[2.177s] [ext: omni.kit.raycast.query-1.0.5] startup
+[2.182s] [ext: omni.kit.material.library-1.5.15] startup
+[2.186s] [ext: omni.hydra.engine.stats-1.0.3] startup
+[2.188s] [ext: omni.kit.viewport.window-107.0.8] startup
+[2.205s] [ext: omni.warp.core-1.5.0] startup
+[2.348s] [ext: omni.kit.viewport.utility-1.0.18] startup
+[2.349s] [ext: omni.kit.hotkeys.core-1.3.10] startup
+[2.349s] [ext: omni.kit.widget.prompt-1.0.7] startup
+[2.350s] [ext: omni.kit.usd.collect-2.2.22] startup
+[2.352s] [ext: omni.kit.window.content_browser_registry-0.0.6] startup
+[2.352s] [ext: omni.graph.tools-1.79.1] startup
+[2.371s] [ext: omni.kit.window.file_exporter-1.0.31] startup
+[2.371s] [ext: omni.kit.stage_template.core-1.1.22] startup
+[2.372s] [ext: omni.graph.image.core-0.6.0] startup
+[2.373s] [ext: omni.graph.action_core-1.1.7] startup
+[2.376s] [ext: omni.graph-1.140.2] startup
+[2.412s] [ext: omni.kit.window.file-1.3.57] startup
+[2.415s] [ext: omni.kit.widget.filter-1.1.4] startup
+[2.417s] [ext: omni.graph.image.nodes-1.3.0] startup
+[2.419s] [ext: omni.graph.action_nodes-1.40.1] startup
+[2.423s] [ext: omni.kit.window.content_browser-2.10.3] startup
+[2.460s] [ext: omni.kvdb-106.5.7] startup
+[2.463s] [ext: omni.graph.action-1.120.0] startup
+[2.464s] [ext: omni.kit.tool.collect-2.2.16] startup
+[2.469s] [ext: omni.graph.nodes-1.162.1] startup
+[2.485s] [ext: omni.kit.widget.searchfield-1.1.8] startup
+[2.494s] [ext: omni.localcache-106.5.7] startup
+[2.507s] [ext: omni.convexdecomposition-106.5.7] startup
+[2.512s] [ext: omni.kit.widget.stage_icons-1.0.6] startup
+[2.513s] [ext: omni.kit.widget.stage-2.11.6] startup
+[2.523s] [ext: omni.usdphysics-106.5.7] startup
+[2.527s] [ext: omni.physx.foundation-106.5.7] startup
+[2.528s] [ext: omni.physics.tensors-106.5.7] startup
+[2.535s] [ext: omni.kit.window.stage-2.5.11] startup
+[2.539s] [ext: omni.kit.property.adapter.core-1.0.2] startup
+[2.542s] [ext: omni.physx.cooking-106.5.7] startup
+[2.552s] [ext: omni.kit.widget.zoombar-1.0.5] startup
+[2.553s] [ext: omni.kit.widget.highlight_label-1.0.3] startup
+[2.554s] [ext: omni.kit.property.adapter.usd-1.0.2] startup
+[2.555s] [ext: omni.kit.property.adapter.fabric-1.0.3] startup
+[2.557s] [ext: omni.physx-106.5.7] startup
+[2.570s] [ext: omni.kit.browser.core-2.3.11] startup
+[2.574s] [ext: omni.kit.window.property-1.11.5] startup
+[2.578s] [ext: omni.kit.widget.text_editor-1.0.2] startup
+[2.580s] [ext: omni.kit.property.usd-4.2.16] startup
+[2.590s] [ext: omni.physx.tensors-106.5.7] startup
+[2.598s] [ext: omni.kit.menu.stage-1.2.5] startup
+[2.599s] [ext: omni.kit.browser.folder.core-1.10.1] startup
+[2.605s] [ext: omni.warp-1.5.0] startup
+[2.615s] [ext: isaacsim.examples.browser-0.1.8] startup
+[2.621s] [ext: omni.physx.stageupdate-106.5.7] startup
+[2.625s] [ext: omni.kit.numpy.common-0.1.2] startup
+[2.627s] [ext: isaacsim.core.version-2.0.2] startup
+[2.629s] [ext: omni.isaac.dynamic_control-1.3.15] startup
+[2.635s] [ext: isaacsim.storage.native-1.0.6] startup
+[2.644s] [ext: omni.kit.menu.create-1.0.17] startup
+[2.659s] [ext: isaacsim.core.utils-2.2.8] startup
+[2.669s] [ext: omni.kit.widget.searchable_combobox-1.0.6] startup
+[2.676s] [ext: omni.kit.primitive.mesh-1.0.17] startup
+[2.688s] [ext: isaacsim.core.simulation_manager-0.3.3] startup
+[3.865s] [ext: omni.kit.scripting-106.5.2] startup
+[3.870s] [ext: omni.kit.stage_templates-1.2.6] startup
+[3.873s] [ext: isaacsim.core.prims-0.3.7] startup
+[3.890s] [ext: isaacsim.replicator.behavior-1.0.8] startup
+[3.892s] [ext: isaacsim.core.api-4.2.16] startup
+[3.900s] [ext: omni.ui_query-1.1.7] startup
+[3.902s] [ext: omni.kit.manipulator.viewport-107.0.1] startup
+[3.904s] [ext: omni.kit.ui_test-1.3.3] startup
+[3.905s] [ext: omni.kit.window.extensions-1.4.25] startup
+[3.911s] [ext: omni.graph.visualization.nodes-2.1.1] startup
+[3.917s] [ext: omni.kit.tool.asset_importer-2.12.2] startup
+[3.932s] [ext: isaacsim.gui.components-1.0.9] startup
+[3.939s] [ext: omni.kit.widget.settings-1.2.2] startup
+[3.946s] [ext: omni.kit.widget.graph-1.12.17] startup
+[3.953s] [ext: omni.kit.window.preferences-1.7.0] startup
+[3.962s] [ext: omni.kit.graph.delegate.default-1.2.2] startup
+[3.963s] [ext: omni.kit.viewport.menubar.core-107.1.2] startup
+[3.975s] [ext: omni.kit.widget.material_preview-1.0.16] startup
+[3.978s] [ext: omni.kit.graph.usd.commands-1.3.1] startup
+[3.979s] [ext: omni.kit.graph.editor.core-1.5.3] startup
+[3.982s] [ext: omni.syntheticdata-0.6.10] startup
+[4.008s] [ext: omni.kit.window.material_graph-1.8.19] startup
+[4.037s] [ext: omni.graph.scriptnode-1.40.1] startup
+[4.043s] [ext: isaacsim.core.cloner-1.3.4] startup
+[4.046s] [ext: omni.replicator.core-1.11.35] startup
+[4.199s] [ext: omni.isaac.cloner-1.0.2] startup
+[4.202s] [ext: isaacsim.core.nodes-2.1.4] startup
+[4.210s] [ext: isaacsim.asset.importer.urdf-2.3.10] startup
+[4.372s] [ext: omni.isaac.core-4.0.3] startup
+[4.381s] [ext: omni.isaac.core_nodes-2.0.2] startup
+[4.391s] [ext: omni.anim.curve.core-1.2.0] startup
+[4.410s] [ext: isaacsim.robot_motion.lula-4.0.4] startup
+[4.421s] [ext: isaacsim.asset.importer.mjcf-2.3.3] startup
+[4.430s] [ext: isaacsim.robot_motion.motion_generation-8.0.6] startup
+[4.467s] [ext: isaacsim.asset.browser-1.3.4] startup
+[4.567s] [ext: isaacsim.robot.surface_gripper-2.0.6] startup
+[4.572s] [ext: omni.kit.selection-0.1.5] startup
+[4.576s] [ext: isaacsim.robot_motion.lula_test_widget-1.0.5] startup
+[4.580s] [ext: omni.isaac.assets_check-0.3.9] startup
+[4.584s] [ext: isaacsim.robot.manipulators-3.0.4] startup
+[4.607s] [ext: isaacsim.sensors.physics-0.3.5] startup
+[4.617s] [ext: isaacsim.gui.menu-2.0.9] startup
+[4.633s] [ext: omni.isaac.lula_test_widget-1.0.2] startup
+[4.635s] [ext: omni.sensors.nv.common-2.5.0-coreapi] startup
+[4.647s] [ext: omni.isaac.manipulators-3.0.3] startup
+[4.649s] [ext: isaacsim.robot.policy.examples-4.0.3] startup
+[4.652s] [ext: omni.isaac.menu-1.0.2] startup
+[4.654s] [ext: omni.isaac.motion_generation-8.0.2] startup
+[4.659s] [ext: omni.sensors.nv.materials-1.4.0-coreapi] startup
+[4.661s] [ext: omni.isaac.nucleus-1.0.3] startup
+[4.663s] [ext: omni.isaac.quadruped-3.0.2] startup
+[4.664s] [ext: omni.kit.manipulator.selector-1.1.1] startup
+[4.667s] [ext: omni.sensors.nv.wpm-2.4.0-coreapi] startup
+[4.669s] [ext: omni.sensors.nv.lidar-2.6.3-coreapi] startup
+[4.675s] [ext: omni.sensors.nv.ids-1.4.0-coreapi] startup
+[4.679s] [ext: isaacsim.robot.manipulators.examples-1.0.3] startup
+[4.681s] [ext: isaacsim.util.debug_draw-2.0.2] startup
+[4.685s] [ext: omni.sensors.tiled-0.0.6] startup
+[4.688s] [ext: omni.sensors.nv.radar-2.6.1-coreapi] startup
+[4.694s] [ext: omni.kit.widget.toolbar-1.7.3] startup
+[4.701s] [ext: omni.kit.manipulator.transform-106.0.1] startup
+[4.705s] [ext: isaacsim.sensors.physx-2.2.4] startup
+[4.711s] [ext: isaacsim.sensors.rtx-13.6.3] startup
+[4.717s] [ext: isaacsim.sensors.camera-0.2.9] startup
+[4.727s] [ext: isaacsim.cortex.framework-1.0.2] startup
+[4.729s] [ext: omni.kit.manipulator.tool.snap-1.5.12] startup
+[4.740s] [ext: omni.isaac.range_sensor-4.0.2] startup
+[4.747s] [ext: omni.isaac.surface_gripper-2.0.2] startup
+[4.751s] [ext: omni.isaac.sensor-13.0.3] startup
+[4.763s] [ext: omni.isaac.cortex-1.0.2] startup
+[4.766s] [ext: omni.kit.viewport.manipulator.transform-107.0.4] startup
+[4.769s] [ext: omni.debugdraw-0.1.3] startup
+[4.777s] [ext: omni.isaac.universal_robots-1.0.2] startup
+[4.779s] [ext: omni.isaac.utils-2.0.2] startup
+[4.779s] [ext: omni.kit.manipulator.prim.core-107.0.7] startup
+[4.788s] [ext: omni.fabric.commands-1.1.5] startup
+[4.790s] [ext: omni.kit.manipulator.selection-106.0.1] startup
+[4.792s] [ext: omni.kit.viewport.actions-107.0.0] startup
+[4.797s] [ext: omni.kit.manipulator.prim.usd-107.0.3] startup
+[4.799s] [ext: omni.kit.manipulator.prim.fabric-107.0.4] startup
+[4.802s] [ext: isaacsim.cortex.behaviors-2.0.3] startup
+[4.803s] [ext: omni.kit.widget.layers-1.8.2] startup
+[4.822s] [ext: omni.kit.viewport.menubar.display-107.0.3] startup
+[4.825s] [ext: omni.kit.manipulator.prim-107.0.0] startup
+[4.825s] [ext: omni.isaac.cortex.sample_behaviors-2.0.2] startup
+[4.826s] [ext: omni.graph.ui_nodes-1.40.1] startup
+[4.832s] [ext: omni.usdphysics.ui-106.5.7] startup
+[4.864s] [ext: omni.physx.commands-106.5.7] startup
+[4.869s] [ext: omni.kit.property.camera-1.0.9] startup
+[4.874s] [ext: omni.hydra.scene_api-0.1.2] startup
+[4.881s] [ext: omni.kit.property.geometry-1.3.3] startup
+[4.885s] [ext: omni.kit.property.light-1.0.11] startup
+[4.887s] [ext: omni.physx.ui-106.5.7] startup
+[4.913s] [ext: omni.kit.property.material-1.10.17] startup
+[4.920s] [ext: omni.kit.property.render-1.1.3] startup
+[4.922s] [ext: omni.kit.property.transform-1.5.10] startup
+[4.926s] [ext: omni.kit.property.audio-1.0.16] startup
+[4.928s] [ext: isaacsim.gui.property-1.0.4] startup
+[4.930s] [ext: omni.physx.demos-106.5.7] startup
+[4.945s] [ext: omni.kit.property.physx-106.5.7] startup
+[4.996s] [ext: omni.isaac.lula-4.0.2] startup
+[4.998s] [ext: omni.kit.property.bundle-1.3.2] startup
+[5.000s] [ext: omni.kit.property.isaac-1.0.2] startup
+[5.002s] [ext: omni.physx.vehicle-106.5.7] startup
+[5.020s] [ext: omni.kit.viewport.menubar.camera-107.0.2] startup
+[5.024s] [ext: omni.kit.viewport.menubar.lighting-106.0.2] startup
+[5.027s] [ext: omni.kit.viewport.menubar.render-107.0.8] startup
+[5.030s] [ext: omni.kit.viewport.menubar.settings-107.0.3] startup
+[5.035s] [ext: omni.kit.window.console-0.2.14] startup
+[5.043s] [ext: omni.physx.camera-106.5.7] startup
+[5.054s] [ext: omni.kit.window.toolbar-1.6.2] startup
+[5.058s] [ext: omni.isaac.version-2.0.2] startup
+[5.059s] [ext: isaacsim.robot.wheeled_robots-4.0.3] startup
+[5.064s] [ext: omni.physx.cct-106.5.7] startup
+[5.079s] [ext: omni.physx.graph-106.5.7] startup
+[5.112s] [ext: isaacsim.replicator.writers-1.0.1] startup
+[5.151s] [ext: omni.physx.supportui-106.5.7] startup
+[5.171s] [ext: omni.physx.telemetry-106.5.7] startup
+[5.185s] [ext: omni.isaac.wheeled_robots-3.0.3] startup
+[5.191s] [ext: omni.isaac.franka-1.0.2] startup
+[5.199s] [ext: isaacsim.replicator.domain_randomization-1.0.2] startup
+[5.203s] [ext: isaacsim.replicator.examples-1.1.2] startup
+[5.206s] [ext: omni.kit.window.status_bar-0.1.7] startup
+[5.214s] [ext: omni.rtx.window.settings-0.6.17] startup
+[5.232s] [ext: omni.usd.metrics.assembler-106.5.0] startup
+[5.245s] [ext: omni.physx.bundle-106.5.7] startup
+[5.245s] [ext: isaacsim.app.about-2.0.7] startup
+[5.247s] [ext: omni.replicator.isaac-2.0.3] startup
+[5.248s] [ext: omni.replicator.replicator_yaml-2.0.10] startup
+[5.267s] [ext: omni.rtx.settings.core-0.6.3] startup
+[5.274s] [ext: omni.usd.metrics.assembler.ui-106.5.0] startup
+[5.280s] [ext: isaacsim.simulation_app-2.4.2] startup
+[5.282s] [ext: omni.isaac.window.about-2.0.2] startup
+[5.283s] [ext: semantics.schema.editor-0.3.10] startup
+[5.286s] [ext: omni.kit.ui.actions-1.0.2] startup
+[5.287s] [ext: semantics.schema.property-1.0.5] startup
+[5.289s] [ext: omni.kit.manipulator.camera-106.0.3] startup
+[5.293s] [ext: omni.isaac.kit-2.0.3] startup
+[5.293s] [ext: omni.isaac.asset_browser-1.0.2] startup
+[5.294s] [ext: isaacsim.core.throttling-2.0.2] startup
+[5.295s] [ext: omni.kit.menu.common-1.1.9] startup
+[5.297s] [ext: isaacsim.exp.base-4.5.0] startup
+[5.298s] [ext: isaacsim.exp.base.python-4.5.0] startup
+[5.299s] Simulation App Starting
+[5.543s] app ready
+Starting kit application with the following args:  ['/mnt/hbotdata/tmp/isaac-sim/exts/isaacsim.simulation_app/isaacsim/simulation_app/simulation_app.py', '/mnt/hbotdata/tmp/isaac-sim/apps/isaacsim.exp.base.python.kit', '--/app/tokens/exe-path=/mnt/hbotdata/tmp/isaac-sim/kit', '--/persistent/app/viewport/displayOptions=3094', '--/rtx/materialDb/syncLoads=True', '--/rtx/hydra/materialSyncLoads=True', '--/omni.kit.plugin/syncUsdLoads=True', '--/app/renderer/resolution/width=1280', '--/app/renderer/resolution/height=720', '--/app/window/width=1440', '--/app/window/height=900', '--/renderer/multiGpu/enabled=True', '--/app/fastShutdown=True', '--/app/installSignalHandlers=0', '--ext-folder', '/mnt/hbotdata/tmp/isaac-sim/exts', '--ext-folder', '/mnt/hbotdata/tmp/isaac-sim/apps', '--/physics/cudaDevice=0', '--portable', '--no-window', '--/app/window/hideUi=1']
+Passing the following args to the base kit application:  []
+Warp 1.5.0 initialized:
+   CUDA Toolkit 11.8, Driver 13.0
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA GeForce RTX 4060 Laptop GPU" (8 GiB, sm_89, mempool enabled)
+   Kernel cache:
+     /home/yjh/.cache/warp/1.5.0
+ISAAC_OK
+[9.089s] Simulation App Startup Complete
+[9.101s] [ext: isaacsim.ros2.bridge-4.1.15] startup
+[9.145s] Attempting to load system rclpy
+[9.183s] rclpy loaded
+STAGE_OK /World
+PLAY_OK
+VIDEO assets/q3_touch.mp4 1280 720
+DOF ['wheel_left_joint', 'wheel_right_joint', 'lift_joint', 'pitch_joint', 'joint1', 'joint2', 'joint3', 'joint4', 'joint5', 'joint6', 'arm_finger_joint1', 'arm_finger_joint2']
+BASE_LOCK_ON [13.2202, 5.2378, -0.0]
+
+=== touch_toy_1 (rubik_cube) ===
+玩具在底盘系：输入 [0.5349, -0.3302, 0.0289]，场景 [0.5349, -0.3302, 0.0289]，差 0.0000 m
+玩具包围盒尺寸 [0.0581, 0.0577, 0.0582] m，半对角线 0.0502 m
+IK 预抓取位置残差 0.00001 m，抓取位置残差 0.00010 m，姿态残差 0.00000 rad，模式 宽抓
+  转运姿态（高 0.30 米）解残差 0.0000 m
+-- 抬升并转向玩具
+  预抓取到位误差 0.0037 m
+-- 下降到玩具
+-- 等待宽抓到位
+  合拢到第 1 步夹住玩具：力矩 1.584 N·m
+接触距离 0.0055 m（合拢前 0.0055 m，最优 0.0055 m，触底回升 否，峰值指力矩 1.584 N·m，玩具位移 2.0 mm，接触 有）
+  指关节力矩 {'arm_finger_joint1': -1.1184, 'arm_finger_joint2': -1.5453}
+  底盘位移 0.0000 m
+完成：最终距离 0.0055 m，指力矩 1.584 N·m，USD/FK 偏差 0.00001 m，PASS
+
+=== touch_toy_2 (dinosaur) ===
+玩具在底盘系：输入 [0.5418, -0.1502, 0.047]，场景 [0.5426, -0.1494, 0.0476]，差 0.0013 m
+玩具包围盒尺寸 [0.2324, 0.0637, 0.1006] m，半对角线 0.1306 m
+IK 预抓取位置残差 0.00000 m，抓取位置残差 0.00000 m，姿态残差 0.00001 rad，模式 斜抓
+  转运姿态（高 0.30 米）解残差 0.0000 m
+-- 抬升并转向玩具
+-- 等待预抓取到位
+  预抓取到位误差 0.0089 m
+-- 下降到玩具
+  step 024 距离 0.1445 m
+  step 036 距离 0.1315 m
+  step 060 距离 0.0949 m
+  step 072 距离 0.0731 m
+  step 096 距离 0.0318 m
+  step 108 距离 0.0155 m
+-- 合拢手指
+接触距离 0.0047 m（合拢前 0.0054 m，最优 0.0055 m，触底回升 否，峰值指力矩 0.430 N·m，玩具位移 4.8 mm，接触 有）
+  指关节力矩 {'arm_finger_joint1': -0.3977, 'arm_finger_joint2': -0.4302}
+  底盘位移 0.0000 m
+完成：最终距离 0.0047 m，指力矩 0.430 N·m，USD/FK 偏差 0.00003 m，PASS
+
+=== touch_toy_3 (soft_toy) ===
+初值读回最大误差 0.000021 rad/m
+玩具在底盘系：输入 [0.5599, 0.0692, 0.0519]，场景 [0.5601, 0.0692, 0.0519]，差 0.0001 m
+玩具包围盒尺寸 [0.074, 0.0569, 0.102] m，半对角线 0.0691 m
+IK 预抓取位置残差 0.00001 m，抓取位置残差 0.00001 m，姿态残差 0.00008 rad，模式 斜抓
+  转运姿态（高 0.30 米）解残差 0.0000 m
+-- 抬升并转向玩具
+  预抓取到位误差 0.0019 m
+-- 下降到玩具
+  step 012 距离 0.1476 m
+  step 048 距离 0.1095 m
+  step 084 距离 0.0486 m
+  step 120 距离 0.0017 m
+-- 合拢手指
+  合拢到第 12 步夹住玩具：力矩 0.291 N·m
+  指关节力矩 {'arm_finger_joint1': -0.2259, 'arm_finger_joint2': -0.2611}
+  底盘位移 0.0000 m
+完成：最终距离 0.0041 m，指力矩 0.291 N·m，USD/FK 偏差 0.00001 m，PASS
+
+已写入 3 行 -> answers/q3_demo_output.jsonl
+视频已写出 -> assets/q3_touch.mp4（2274 个物理步）
+
+结果汇总：
+  touch_toy_1: 最终距离 0.0055 m，接触 True，指力矩 1.584 N·m，玩具位移 2.0 mm
+  touch_toy_2: 最终距离 0.0047 m，接触 True，指力矩 0.430 N·m，玩具位移 4.8 mm
+  touch_toy_3: 最终距离 0.0041 m，接触 True，指力矩 0.291 N·m，玩具位移 4.1 mm
+
+[175.054s] Simulation App Shutting Down

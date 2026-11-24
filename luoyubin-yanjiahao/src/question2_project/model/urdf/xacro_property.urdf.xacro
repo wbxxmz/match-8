@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="bajie_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- <xacro:include filename="$(find mvp0_25_1)/urdf/mvp0_25_1_arm.urdf.xacro" /> -->
+
+  <xacro:arg name="calibration_file" default="$(find bajie_robot)/calib/calibration.yaml" />
+  <xacro:property name="yaml_file" value="$(arg calibration_file)" />
+  <xacro:property name="calib_props" value="${load_yaml(yaml_file)}"/>
+
+  <xacro:property name="berxel_upper_base_link_x" value="${calib_props['berxel_upper_base_link']['xyz'][0]}"/>
+  <xacro:property name="berxel_upper_base_link_y" value="${calib_props['berxel_upper_base_link']['xyz'][1]}"/>
+  <xacro:property name="berxel_upper_base_link_z" value="${calib_props['berxel_upper_base_link']['xyz'][2]}"/>
+  <xacro:property name="berxel_upper_base_link_r" value="${calib_props['berxel_upper_base_link']['rpy'][0]}"/>
+  <xacro:property name="berxel_upper_base_link_p" value="${calib_props['berxel_upper_base_link']['rpy'][1]}"/>
+  <xacro:property name="berxel_upper_base_link_yaw" value="${calib_props['berxel_upper_base_link']['rpy'][2]}"/>
+
+  <!-- berxel_arm_base_link -->
+  <xacro:property name="berxel_arm_base_link_x" value="${calib_props['berxel_arm_base_link']['xyz'][0]}"/>
+  <xacro:property name="berxel_arm_base_link_y" value="${calib_props['berxel_arm_base_link']['xyz'][1]}"/>
+  <xacro:property name="berxel_arm_base_link_z" value="${calib_props['berxel_arm_base_link']['xyz'][2]}"/>
+  <xacro:property name="berxel_arm_base_link_r" value="${calib_props['berxel_arm_base_link']['rpy'][0]}"/>
+  <xacro:property name="berxel_arm_base_link_p" value="${calib_props['berxel_arm_base_link']['rpy'][1]}"/>
+  <xacro:property name="berxel_arm_base_link_yaw" value="${calib_props['berxel_arm_base_link']['rpy'][2]}"/>
+
+  <!-- tof_top_link -->
+  <xacro:property name="tof_top_link_x" value="${calib_props['tof_top_link']['xyz'][0]}"/>
+  <xacro:property name="tof_top_link_y" value="${calib_props['tof_top_link']['xyz'][1]}"/>
+  <xacro:property name="tof_top_link_z" value="${calib_props['tof_top_link']['xyz'][2]}"/>
+  <xacro:property name="tof_top_link_r" value="${calib_props['tof_top_link']['rpy'][0]}"/>
+  <xacro:property name="tof_top_link_p" value="${calib_props['tof_top_link']['rpy'][1]}"/>
+  <xacro:property name="tof_top_link_yaw" value="${calib_props['tof_top_link']['rpy'][2]}"/>
+
+  <!-- tof_top_link -->
+  <xacro:property name="line_laser_down_link_x" value="${calib_props['line_laser_down_link']['xyz'][0]}"/>
+  <xacro:property name="line_laser_down_link_y" value="${calib_props['line_laser_down_link']['xyz'][1]}"/>
+  <xacro:property name="line_laser_down_link_z" value="${calib_props['line_laser_down_link']['xyz'][2]}"/>
+  <xacro:property name="line_laser_down_link_r" value="${calib_props['line_laser_down_link']['rpy'][0]}"/>
+  <xacro:property name="line_laser_down_link_p" value="${calib_props['line_laser_down_link']['rpy'][1]}"/>
+  <xacro:property name="line_laser_down_link_yaw" value="${calib_props['line_laser_down_link']['rpy'][2]}"/>
+
+
+
+
+</robot>

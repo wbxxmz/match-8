@@ -1,0 +1,1 @@
+{"id": "demo_zero", "joint_state": {"lift_joint": 0.0, "pitch_joint": 0.0, "joint1": 0.0, "joint2": 0.0, "joint3": 0.0, "joint4": 0.0, "joint5": 0.0, "joint6": 0.0, "arm_finger_joint1": 0.0, "arm_finger_joint2": 0.0}, "scene_object_in_base_footprint": {"xyz": [0.5, -0.5, 0.3], "rpy": [0.0, 0.0, 0.0]}}

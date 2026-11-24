@@ -1,0 +1,63 @@
+[INFO] [launch]: All log files can be found below /home/yjh/.ros/log/2026-11-21-18-03-22-249800-yjh-Legion-Y7000P-IRX9-69706
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [robot_state_publisher-1]: process started with pid [69742]
+[INFO] [rviz2-2]: process started with pid [69744]
+[INFO] [python3-3]: process started with pid [69746]
+[robot_state_publisher-1] [WARN] [1795255402.464952331] [kdl_parser]: The root link base_footprint has an inertia specified in the URDF, but KDL does not support a root link with an inertia.  As a workaround, you can add an extra dummy link to your URDF.
+[robot_state_publisher-1] [INFO] [1795255402.465043316] [robot_state_publisher]: got segment arm1_link
+[robot_state_publisher-1] [INFO] [1795255402.465075878] [robot_state_publisher]: got segment arm2_link
+[robot_state_publisher-1] [INFO] [1795255402.465079325] [robot_state_publisher]: got segment arm3_link
+[robot_state_publisher-1] [INFO] [1795255402.465081889] [robot_state_publisher]: got segment arm4_link
+[robot_state_publisher-1] [INFO] [1795255402.465084272] [robot_state_publisher]: got segment arm5_link
+[robot_state_publisher-1] [INFO] [1795255402.465086641] [robot_state_publisher]: got segment arm6_link
+[robot_state_publisher-1] [INFO] [1795255402.465089118] [robot_state_publisher]: got segment arm_base_link
+[robot_state_publisher-1] [INFO] [1795255402.465091672] [robot_state_publisher]: got segment base_footprint
+[robot_state_publisher-1] [INFO] [1795255402.465094155] [robot_state_publisher]: got segment base_link
+[robot_state_publisher-1] [INFO] [1795255402.465096622] [robot_state_publisher]: got segment base_scan
+[robot_state_publisher-1] [INFO] [1795255402.465098941] [robot_state_publisher]: got segment berxel_arm_base_link
+[robot_state_publisher-1] [INFO] [1795255402.465101583] [robot_state_publisher]: got segment berxel_upper_base_link
+[robot_state_publisher-1] [INFO] [1795255402.465104075] [robot_state_publisher]: got segment caster_back_link
+[robot_state_publisher-1] [INFO] [1795255402.465106536] [robot_state_publisher]: got segment caster_back_link2
+[robot_state_publisher-1] [INFO] [1795255402.465108917] [robot_state_publisher]: got segment caster_left_link
+[robot_state_publisher-1] [INFO] [1795255402.465111473] [robot_state_publisher]: got segment caster_left_link2
+[robot_state_publisher-1] [INFO] [1795255402.465113874] [robot_state_publisher]: got segment caster_right_link
+[robot_state_publisher-1] [INFO] [1795255402.465116254] [robot_state_publisher]: got segment caster_right_link2
+[robot_state_publisher-1] [INFO] [1795255402.465118611] [robot_state_publisher]: got segment gripper_left_link
+[robot_state_publisher-1] [INFO] [1795255402.465120982] [robot_state_publisher]: got segment gripper_link
+[robot_state_publisher-1] [INFO] [1795255402.465123383] [robot_state_publisher]: got segment gripper_right_link
+[robot_state_publisher-1] [INFO] [1795255402.465125844] [robot_state_publisher]: got segment head_pitch_link
+[robot_state_publisher-1] [INFO] [1795255402.465128420] [robot_state_publisher]: got segment head_wide_angle_link
+[robot_state_publisher-1] [INFO] [1795255402.465130886] [robot_state_publisher]: got segment infrared_link
+[robot_state_publisher-1] [INFO] [1795255402.465133382] [robot_state_publisher]: got segment lift_base_link
+[robot_state_publisher-1] [INFO] [1795255402.465135782] [robot_state_publisher]: got segment lift_link
+[robot_state_publisher-1] [INFO] [1795255402.465138269] [robot_state_publisher]: got segment line_laser_down_link
+[robot_state_publisher-1] [INFO] [1795255402.465140698] [robot_state_publisher]: got segment objects_link
+[robot_state_publisher-1] [INFO] [1795255402.465143059] [robot_state_publisher]: got segment royale_camera_optical_frame
+[robot_state_publisher-1] [INFO] [1795255402.465145579] [robot_state_publisher]: got segment tof_top_link
+[robot_state_publisher-1] [INFO] [1795255402.465147905] [robot_state_publisher]: got segment wheel_left_link
+[robot_state_publisher-1] [INFO] [1795255402.465150280] [robot_state_publisher]: got segment wheel_right_link
+[rviz2-2] [INFO] [1795255402.694955610] [rviz2]: Stereo is NOT SUPPORTED
+[rviz2-2] [INFO] [1795255402.695057799] [rviz2]: OpenGl version: 4.6 (GLSL 4.6)
+[rviz2-2] [INFO] [1795255402.710792048] [rviz2]: Stereo is NOT SUPPORTED
+[python3-3] [demo_zero] objects_link xyz: [1.103715, -0.062685, 0.629136]
+[python3-3] [demo_zero] scene_object_in_objects_link xyz: [-0.603441, -0.437315, -0.329638]
+[python3-3] [demo_zero] distance: 0.814891 m
+[python3-3] t=  1.0s  alpha=0.06  objects_link=(1.109, -0.063, 0.584)  distance=0.801 m
+[python3-3] t=  3.0s  alpha=0.95  objects_link=(0.816, 0.221, 0.101)  distance=0.812 m
+[python3-3] t=  5.1s  alpha=0.93  objects_link=(0.831, 0.209, 0.107)  distance=0.806 m
+[python3-3] t=  7.1s  alpha=0.04  objects_link=(1.107, -0.063, 0.601)  distance=0.806 m
+[python3-3] t=  9.1s  alpha=0.09  objects_link=(1.109, -0.063, 0.567)  distance=0.796 m
+[python3-3] t= 11.2s  alpha=0.97  objects_link=(0.804, 0.230, 0.097)  distance=0.817 m
+[python3-3] t= 13.2s  alpha=0.90  objects_link=(0.849, 0.194, 0.114)  distance=0.799 m
+[python3-3] t= 15.2s  alpha=0.03  objects_link=(1.106, -0.063, 0.611)  distance=0.809 m
+[python3-3] t= 17.2s  alpha=0.12  objects_link=(1.110, -0.061, 0.545)  distance=0.790 m
+[python3-3] t= 19.3s  alpha=0.98  objects_link=(0.795, 0.237, 0.095)  distance=0.820 m
+[python3-3] t= 21.3s  alpha=0.86  objects_link=(0.871, 0.176, 0.125)  distance=0.791 m
+[python3-3] t= 23.3s  alpha=0.01  objects_link=(1.105, -0.063, 0.619)  distance=0.812 m
+[python3-3] t= 25.3s  alpha=0.16  objects_link=(1.109, -0.058, 0.519)  distance=0.783 m
+[python3-3] t= 27.4s  alpha=0.99  objects_link=(0.790, 0.241, 0.093)  distance=0.822 m
+[robot_state_publisher-1] [INFO] [1795255431.033757441] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[rviz2-2] [INFO] [1795255431.033862531] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[INFO] [robot_state_publisher-1]: process has finished cleanly [pid 69742]
+[INFO] [python3-3]: process has finished cleanly [pid 69746]
+[INFO] [rviz2-2]: process has finished cleanly [pid 69744]

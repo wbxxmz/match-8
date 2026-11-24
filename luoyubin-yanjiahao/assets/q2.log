@@ -1,0 +1,4 @@
+$ python3 src/question2_project/run_q2.py --input inputs/q2_demo_input.jsonl --output answers/q2_demo_output.jsonl
+关节链：base_joint → lift_base_joint → lift_joint → arm_base_joint → joint1 → joint2 → joint3 → joint4 → joint5 → joint6 → gripper_joint → object_joint
+已写入 1 行 -> answers/q2_demo_output.jsonl
+退出码：0

@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com)
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot name="bajie_robot_gripper" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:macro name="bajie_robot_gripper">
+    <link
+      name="gripper_link">
+      <inertial>
+        <origin
+          xyz="-0.0021567 0.0015653 0.024026"
+          rpy="0 0 0" />
+        <mass
+          value="0.063033" />
+        <inertia
+          ixx="3.1817E-05"
+          ixy="5.4069E-07"
+          ixz="-5.9175E-07"
+          iyy="2.6421E-05"
+          iyz="-4.5883E-07"
+          izz="3.204E-05" />
+      </inertial>
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://bajie_robot/meshes/gripper_link.STL" />
+        </geometry>
+        <material
+          name="">
+          <color
+            rgba="1 1 1 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin
+          xyz="0 0 0.025"
+          rpy="0 0 0" />
+        <geometry>
+          <box size="0.042 0.065 0.05"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint
+      name="gripper_joint"
+      type="fixed">
+      <origin
+        xyz="0 0 0.0735"
+        rpy="0 0 0" />
+      <parent
+        link="arm6_link" />
+      <child
+        link="gripper_link" />
+      <axis
+        xyz="0 0 0" />
+    </joint>
+    <link
+      name="gripper_left_link">
+      <inertial>
+        <origin
+          xyz="0.040327 0.0026418 -1.4281E-06"
+          rpy="0 0 0" />
+        <mass
+          value="0.074174" />
+        <inertia
+          ixx="1.4014E-05"
+          ixy="4.2402E-06"
+          ixz="1.1531E-06"
+          iyy="2.8216E-05"
+          iyz="8.1024E-07"
+          izz="2.0551E-05" />
+      </inertial>
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://bajie_robot/meshes/gripper_right_Link.STL" />
+        </geometry>
+        <material
+          name="">
+          <color
+            rgba="1 1 1 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin
+        xyz="0.0 0.0 0.0"
+        rpy="3.141585 -0.000003 0.095996" />
+        <geometry>
+          <box size="0.020913 0.032435 0.064000"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin
+        xyz="0.026475 -0.007826 0.0"
+        rpy="3.141585 -0.000003 0.095996" />
+        <geometry>
+          <box size="0.027077 0.027276 0.039000"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin
+        xyz="0.055589 0.004565 0.0"
+        rpy="3.141585 -0.000001 0.268366" />
+        <geometry>
+          <box size="0.043906 0.015956 0.039000"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin
+        xyz="0.08512 0.011538 0.0"
+        rpy="3.141585 -0.000003 -0.004784" />
+        <geometry>
+          <box size="0.021033 0.012932 0.039000"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint
+      name="arm_finger_joint1"
+      type="revolute">
+      <origin
+        xyz="0 0.018 0.037"
+        rpy="3.1416 -1.5708 0" />
+      <parent
+        link="gripper_link" />
+      <child
+        link="gripper_left_link" />
+      <axis
+        xyz="0 0 -1" />
+      <limit
+        lower="0.0"
+        upper="0.506"
+        effort="0"
+        velocity="0" />
+    </joint>
+    <link
+      name="gripper_right_link">
+      <inertial>
+        <origin
+          xyz="0.040327 -0.0026418 3.6621E-05"
+          rpy="0 0 0" />
+        <mass
+          value="0.074174" />
+        <inertia
+          ixx="1.4014E-05"
+          ixy="-4.2402E-06"
+          ixz="1.1672E-06"
+          iyy="2.8216E-05"
+          iyz="-8.1457E-07"
+          izz="2.0551E-05" />
+      </inertial>
+      <visual>
+        <origin
+          xyz="0 0 0"
+          rpy="0 0 0" />
+        <geometry>
+          <mesh
+            filename="package://bajie_robot/meshes/gripper_left_Link.STL" />
+        </geometry>
+        <material
+          name="">
+          <color
+            rgba="1 1 1 1" />
+        </material>
+      </visual>
+      <collision>
+        <origin
+        xyz="0.0 0.0 0.0"
+        rpy="3.141586 -0.000004 -0.095996" />
+        <geometry>
+          <box size="0.020913 0.032435 0.064000"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin
+        xyz="0.026478 0.007822 0.0"
+        rpy="3.141586 -0.000004 -0.095996" />
+        <geometry>
+          <box size="0.027077 0.027276 0.039000"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin
+        xyz="0.055592 -0.004569 0.0"
+        rpy="3.141586 -0.000005 -0.268366" />
+        <geometry>
+          <box size="0.043906 0.015956 0.039000"/>
+        </geometry>
+      </collision>
+      <collision>
+        <origin
+        xyz="0.085123 -0.011542 0.0"
+        rpy="3.141585 -0.000003 0.008724" />
+        <geometry>
+          <box size="0.021033 0.012932 0.039000"/>
+        </geometry>
+      </collision>
+    </link>
+    <joint
+      name="arm_finger_joint2"
+      type="revolute">
+      <origin
+        xyz="0 -0.018 0.037"
+        rpy="3.1416 -1.5708 0" />
+      <parent
+        link="gripper_link" />
+      <child
+        link="gripper_right_link" />
+      <axis
+        xyz="0 0 1" />
+      <limit
+        lower="0.0"
+        upper="0.506"
+        effort="0"
+        velocity="0" />
+      <mimic joint="arm_finger_joint1" />
+    </joint>
+  </xacro:macro>
+</robot>
