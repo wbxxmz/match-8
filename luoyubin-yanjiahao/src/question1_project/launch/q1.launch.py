@@ -6,6 +6,7 @@
 """
 import os
 import sys
+from pathlib import Path
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess
@@ -19,11 +20,12 @@ SRC = os.path.dirname(HERE)
 BASE = os.path.dirname(os.path.dirname(SRC))
 sys.path.insert(0, SRC)
 
-from robot_urdf import expand_urdf  # noqa: E402
+from robot_urdf import expand_urdf, find_urdf_root  # noqa: E402
 
 
 def generate_launch_description():
-    urdf_root = os.environ.get("BAJIE_URDF_ROOT", "/home/yjh/bajie-competition/urdf")
+    work_dir = Path(BASE).resolve()
+    urdf_root = find_urdf_root(search_bases=(work_dir, *work_dir.parents))
     description = expand_urdf(urdf_root)
 
     rviz_config = LaunchConfiguration("rviz_config")

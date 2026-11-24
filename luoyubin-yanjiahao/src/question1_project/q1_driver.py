@@ -17,6 +17,7 @@ final_joint_state 与最后一个关键帧一致。
 """
 import argparse
 import json
+import math
 import random
 import time
 from pathlib import Path
@@ -173,14 +174,21 @@ def load_records(path):
                 raise ValueError(
                     f"{path} 第 {number} 行字段 {key!r} 不是数值：{record[key]!r}"
                 ) from exc
+            if not math.isfinite(value):
+                raise ValueError(
+                    f"{path} 第 {number} 行字段 {key!r} 必须是有限数值：{record[key]!r}"
+                )
             if value < 0:
                 raise ValueError(f"{path} 第 {number} 行字段 {key!r} 不能为负：{value}")
+        seed = record.get("seed", 0)
         try:
-            int(record.get("seed", 0))
+            seed_value = float(seed)
         except (TypeError, ValueError) as exc:
             raise ValueError(
-                f"{path} 第 {number} 行字段 'seed' 不是整数：{record.get('seed')!r}"
+                f"{path} 第 {number} 行字段 'seed' 不是整数：{seed!r}"
             ) from exc
+        if not math.isfinite(seed_value) or not seed_value.is_integer():
+            raise ValueError(f"{path} 第 {number} 行字段 'seed' 必须是整数：{seed!r}")
         records.append(record)
     if not records:
         raise ValueError(f"{path} 没有任何有效行")

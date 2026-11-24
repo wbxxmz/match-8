@@ -35,7 +35,7 @@
 | numpy | 2.2.6 | 题二矩阵运算；`pip install numpy` 或系统包均可 |
 | Isaac Sim | 4.5.0-rc.36 | 题三仿真环境，安装路径自定；本机在 `/mnt/hbotdata/tmp/isaac-sim` |
 | opencv-python | 4.12 | 仅题三 `--video` 录制用；不录制视频可不装 |
-| 官方模型 | `urdf/bajie_robot.urdf.xacro` | 题二自动查找：`--urdf-root` > `BAJIE_URDF_ROOT` > 外部 `urdf/` > 作品内置副本 `src/question2_project/model/` |
+| 官方模型 | `urdf/bajie_robot.urdf.xacro` | 题一、题二都按 `BAJIE_URDF_ROOT` > 从作品目录逐级向上找 `urdf/` 的顺序定位（题二另有 `--urdf-root` 与作品内置副本 `src/question2_project/model/` 兜底）；找不到时题一会直接提示设置 `BAJIE_URDF_ROOT`，不会甩一个临时路径报错 |
 
 ```bash
 sudo apt-get install -y ros-humble-robot-state-publisher ros-humble-rviz2 ros-humble-xacro
