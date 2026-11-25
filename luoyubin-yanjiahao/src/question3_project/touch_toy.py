@@ -63,6 +63,7 @@ TOY_DISPLACEMENT = 0.005   # 玩具被推离原位超过此值即认定真实接
 DEEPEN_DEPTH = 0.01        # 未接触时每次继续下探的深度（米）
 DEEPEN_STEPS = 3           # 最多下探次数（3 cm，避免目标点落到地面以下）
 PHYSICS_STEPS_PER_FRAME = 2
+TOY_SETTLE_STEPS = 30      # 玩具摆到题面位姿后等待物理收敛的步数（0.5 秒）
 
 # 视频（独立相机；1280×720，每 4 个物理步渲染一帧，按 15 fps 写出即实时速度）
 VIDEO_EYE = (10.55, 3.75, 2.55)      # 相机位置（世界系，拉远抬高，同时拍到抬升段与最近玩具）
@@ -437,7 +438,7 @@ def main():
         print("VIEWPORT", None if active is None else active.resolution, flush=True)
 
     from isaacsim.core.api import World
-    from isaacsim.core.prims import Articulation
+    from isaacsim.core.prims import Articulation, RigidPrim
 
     world = World()
     world.play()
@@ -549,6 +550,40 @@ def main():
 
     def toy_pose(name):
         return world_pose(TOY_PRIMS[name])
+
+    def rpy_to_quat_wxyz(rpy):
+        """rpy（弧度，Z-Y-X 顺序）→ Isaac 用的 wxyz 四元数。"""
+        roll, pitch, yaw = rpy
+        cr, sr = math.cos(roll / 2), math.sin(roll / 2)
+        cp, sp = math.cos(pitch / 2), math.sin(pitch / 2)
+        cy, sy = math.cos(yaw / 2), math.sin(yaw / 2)
+        return np.array([
+            cr * cp * cy + sr * sp * sy,
+            sr * cp * cy - cr * sp * sy,
+            cr * sp * cy + sr * cp * sy,
+            cr * cp * sy - sr * sp * cy,
+        ])
+
+    def place_toy_at_input(name, pose):
+        """把目标玩具刚体摆到题面输入的位姿：位置和朝向都对齐。
+
+        恐龙资产自带 rotateXYZ=(0,0,-90)，而题面输入记的是 rpy=0；题目要求按输入位姿
+        抓取，所以每例开始时先把它转正，再让物理收敛半秒，便于后续规划与录像一致。
+        """
+        RigidPrim(TOY_PRIMS[name]).set_world_poses(
+            positions=np.array([pose["xyz"]], dtype=float),
+            orientations=np.array([rpy_to_quat_wxyz(pose["rpy"])], dtype=float),
+        )
+        advance(TOY_SETTLE_STEPS)
+        now = toy_pose(name)
+        pos_gap = np.linalg.norm(np.asarray(now["xyz"]) - np.asarray(pose["xyz"], dtype=float))
+        yaw_gap = math.degrees(now["rpy"][2] - pose["rpy"][2])
+        yaw_gap = (yaw_gap + 180.0) % 360.0 - 180.0
+        print(
+            f"玩具已摆到题面位姿（含朝向 rpy=0）：位置差 {pos_gap * 1000:.1f} mm，偏航差 {yaw_gap:+.1f}°",
+            flush=True,
+        )
+        return now
 
     def distance(name, objects_pose_base):
         """objects_pose_base 是底盘系位姿，玩具也换算到底盘系再比，避免跨坐标系。"""
@@ -820,6 +855,7 @@ def main():
             )
             retract_and_transfer(record["joint_state"])
         teleport(initial)
+        place_toy_at_input(name, record["scene_object_in_world"])
         contact_monitor.begin(TOY_PRIMS[name])
         actual = read_state()
         initial_error = max(abs(actual[key] - initial[key]) for key in planner.JOINTS)
@@ -858,7 +894,13 @@ def main():
         else:
             grasp_xyz = target_xyz
             # 倾斜接近：手指从斜上方包住玩具，比竖直朝下多留几厘米手腕余量。
-            grasp_rotation = planner.approach_rotation(target_xyz)
+            # 长条玩具（如恐龙）让倾斜平面沿长轴，两指沿短轴合拢，不会顶在身体端部。
+            long_axis = int(np.argmax(toy_size[:2]))
+            heading = None
+            if toy_size[long_axis] > 1.8 * min(toy_size[0], toy_size[1]):
+                heading = np.zeros(3)
+                heading[long_axis] = 1.0
+            grasp_rotation = planner.approach_rotation(target_xyz, heading=heading)
         pregrasp, pre_error, _ = solve_target(pre_xyz, initial, grasp_rotation)
         grasp, grasp_error, grasp_ori = solve_target(grasp_xyz, initial, grasp_rotation)
         if wide_grasp:
@@ -974,13 +1016,14 @@ def main():
         base_now = world_pose(BASE_PRIM)
         base_shift = float(np.linalg.norm(np.asarray(base_now["xyz"]) - np.asarray(base_pose["xyz"])))
         print(f"  底盘位移 {base_shift:.4f} m", flush=True)
+        # 题面 2.4 节规定 scene_object_in_world 就是玩具的世界位姿，所以答案主字段按输入算（恐龙 rpy=0）。
+        # 场景里恐龙刚体自带 rotateXYZ=(0,0,-90)，仿真实际位姿与输入口径差约 90°，单独存为附加字段。
         toy_in_base = planner.toy_transform_in_base(base_pose, toy_pose(name))
-        toy_in_objects = planner.toy_pose_in_objects(objects_in_base, toy_in_base)
-        # 题面输入把玩具朝向记为 rpy=0，场景资产自带旋转（恐龙 rotateXYZ=(0,0,-90)），
-        # 所以另按输入位姿算一份，供按题面输入复算的评审对账；答案主字段仍是仿真实际位姿。
-        # 底盘用仿真实测位姿（与输入标称差约 0.8 毫米），玩具用输入位姿。
-        toy_in_base_from_input = planner.toy_transform_in_base(base_pose, record["scene_object_in_world"])
-        toy_in_objects_from_input = planner.toy_pose_in_objects(objects_in_base, toy_in_base_from_input)
+        toy_in_base_from_input = planner.toy_transform_in_base(
+            record["base_footprint_in_world"], record["scene_object_in_world"]
+        )
+        toy_in_objects = planner.toy_pose_in_objects(objects_in_base, toy_in_base_from_input)
+        toy_in_objects_sim = planner.toy_pose_in_objects(objects_in_base, toy_in_base)
         yaw_gap = math.degrees(
             math.atan2(toy_in_base[1, 0], toy_in_base[0, 0])
             - math.atan2(toy_in_base_from_input[1, 0], toy_in_base_from_input[0, 0])
@@ -988,8 +1031,8 @@ def main():
         yaw_gap = (yaw_gap + 180.0) % 360.0 - 180.0
         input_gap = float(np.linalg.norm(toy_in_base[:3, 3] - toy_in_base_from_input[:3, 3]))
         print(
-            f"  玩具位姿：仿真实测与输入口径相差 {input_gap:.4f} m / {yaw_gap:+.1f}°"
-            f"（资产自带旋转 + 触碰推动所致，答案两个字段都给出）",
+            f"  玩具位姿：主字段按题面输入（rpy=0）计算，仿真实测另存；"
+            f"两者相差 {input_gap:.4f} m / {yaw_gap:+.1f}°（资产自带旋转 + 触碰推动所致）",
             flush=True,
         )
         touch_distance = float(np.linalg.norm(toy_in_base[:3, 3] - objects_in_base[:3, 3]))
@@ -1008,7 +1051,7 @@ def main():
             "final_joint_state": {key: round(float(final_state[key]), 6) for key in planner.JOINTS},
             "objects_link_in_base_footprint": objects_pose,
             "scene_object_in_objects_link": planner.pose_in_parent(toy_in_objects),
-            "scene_object_in_objects_link_from_input": planner.pose_in_parent(toy_in_objects_from_input),
+            "scene_object_in_objects_link_sim": planner.pose_in_parent(toy_in_objects_sim),
             "scene_object_input_gap_m": round(input_gap, 6),
             "scene_object_input_gap_yaw_deg": round(yaw_gap, 3),
             "touch_distance_m": round(touch_distance, 6),

@@ -4,7 +4,8 @@
 检查项：
 1. 三行答案的 id 与输入一一对应，10 关节齐全且在限位内；
 2. 用最终关节重算 FK，与答案里的 objects_link 位姿一致；
-3. 答案里的玩具位姿能正变换回输入给定的世界位姿（逆变换闭环）；按输入位姿算的那一份必须严格闭环；
+3. 答案主字段的玩具位姿由输入位姿算出，必须正变换回输入（容差 2 毫米，底盘实测与标称差约 0.8 毫米）；
+   附加字段存仿真实际位姿，允许“玩具位移 + 2 毫米”；
 4. 三例 contact_detected 为真，距离不超过 max(3 厘米, 玩具包络半径)；
 5. 日志含三次 PASS、无 error/warning；视频存在且非空。
 
@@ -133,29 +134,34 @@ def main():
         if fk_error > 1e-5 or rot_error > 1e-4:
             problems.append(f"{case} FK 重算不一致：位置 {fk_error:.6f} m，旋转 {rot_error:.6f}")
 
-        # 逆变换闭环：objects_link 位姿 × 玩具在 objects_link 的位姿，应回到玩具在底盘系的位姿。
-        # 输入给的是玩具初始位姿，而答案里的玩具位姿是触碰后的；允许“玩具位移 + 2 毫米”的差。
+        # 主字段闭环：题面 2.4 节规定玩具世界位姿取自输入，所以主字段必须回到输入位姿。
+        # 答案里的 objects_link 位姿来自仿真 FK，底盘实测与输入标称差约 0.8 毫米，容差取 2 毫米。
         expected = planner.toy_transform_in_base(
             record["base_footprint_in_world"], record["scene_object_in_world"]
         )
         reconstructed = answer_matrix @ pose_matrix(answer["scene_object_in_objects_link"])
         loop_error = float(np.linalg.norm(expected[:3, 3] - reconstructed[:3, 3]))
-        loop_limit = float(answer["toy_displacement_m"]) + 0.002
-        if loop_error > loop_limit:
+        loop_rot = float(np.linalg.norm(expected[:3, :3] - reconstructed[:3, :3]))
+        if loop_error > 2e-3 or loop_rot > 2e-3:
             problems.append(
-                f"{case} 玩具位姿逆变换不闭环：{loop_error:.6f} m（允许 {loop_limit:.6f} m）"
+                f"{case} 主字段不回到输入位姿：位置 {loop_error:.6f} m，旋转 {loop_rot:.6f}"
             )
 
-        # 输入口径的闭环：这一份按题面输入位姿算，必须回到输入（恐龙资产 -90° 也包含在内）。
-        # 底盘用的是仿真中实测位姿，与输入标称差约 0.8 毫米，所以位置容差取 2 毫米。
-        input_error = None
-        if "scene_object_in_objects_link_from_input" in answer:
-            from_input = answer_matrix @ pose_matrix(answer["scene_object_in_objects_link_from_input"])
-            input_error = float(np.linalg.norm(expected[:3, 3] - from_input[:3, 3]))
-            input_rot = float(np.linalg.norm(expected[:3, :3] - from_input[:3, :3]))
-            if input_error > 2e-3 or input_rot > 2e-3:
+        # 附加字段是仿真实际位姿（恐龙资产自带 -90°），与输入口径的差应等于记录的间距，
+        # 且闭环误差允许“玩具位移 + 2 毫米”。
+        sim_error = None
+        if "scene_object_in_objects_link_sim" in answer:
+            sim_matrix = answer_matrix @ pose_matrix(answer["scene_object_in_objects_link_sim"])
+            sim_error = float(np.linalg.norm(expected[:3, 3] - sim_matrix[:3, 3]))
+            loop_limit = float(answer["toy_displacement_m"]) + 0.002
+            if sim_error > loop_limit:
                 problems.append(
-                    f"{case} 按输入口径的玩具位姿不闭环：位置 {input_error:.6f} m，旋转 {input_rot:.6f}"
+                    f"{case} 仿真实测位姿逆变换不闭环：{sim_error:.6f} m（允许 {loop_limit:.6f} m）"
+                )
+            gap = float(np.linalg.norm(sim_matrix[:3, 3] - reconstructed[:3, 3]))
+            if abs(gap - float(answer["scene_object_input_gap_m"])) > 1e-3:
+                problems.append(
+                    f"{case} 两口径间距与记录不符：实测 {gap:.6f} m，记录 {answer['scene_object_input_gap_m']:.6f} m"
                 )
 
         # 物理证据：接触标志、距离兜底与力矩/位移至少一项成立。
@@ -173,8 +179,8 @@ def main():
         print(
             f"OK    {case}: 距离 {distance:.4f} m（上限 {distance_limit:.4f}），"
             f"力矩 {effort:.3f} N·m，位移 {displacement * 1000:.1f} mm，"
-            f"FK 差 {fk_error:.6f} m，闭环差 {loop_error:.6f} m"
-            + (f"，输入口径差 {input_error:.6f} m" if input_error is not None else "")
+            f"FK 差 {fk_error:.6f} m，主字段闭环差 {loop_error:.6f} m"
+            + (f"，仿真实测闭环差 {sim_error:.6f} m" if sim_error is not None else "")
         )
 
     log_path = ENTRY_ROOT / "assets/q3.log"

@@ -105,18 +105,21 @@ def top_down_rotation(target_xyz):
     return np.column_stack([x_axis, y_axis, z_axis])
 
 
-def approach_rotation(target_xyz, tilt_deg=50.0):
+def approach_rotation(target_xyz, tilt_deg=50.0, heading=None):
     """斜向下抓姿态：在竖直朝下的基础上，把夹爪前方抬起来、朝向目标外侧倾斜。
 
-    竖直朝下时手指要从正上方插到玩具中心，余量只有几厘米；倾斜后手指从斜上方
-    包住玩具，手背留在空中。留作备选，当前流程只用竖直朝下。
+    heading 给出倾斜平面内的水平方向（默认“底座→目标”）；长条玩具传长轴方向，
+    让两指沿短轴合拢，避免手指顺着身体长度插到端部。
     """
     vertical = top_down_rotation(target_xyz)
-    horizontal = np.array([target_xyz[0], target_xyz[1], 0.0])
+    if heading is None:
+        horizontal = np.array([target_xyz[0], target_xyz[1], 0.0])
+    else:
+        horizontal = np.array([heading[0], heading[1], 0.0])
     if np.linalg.norm(horizontal) < 1e-9:
         horizontal = np.array([1.0, 0.0, 0.0])
     horizontal /= np.linalg.norm(horizontal)
-    axis = np.cross([0.0, 0.0, 1.0], horizontal)  # 水平且垂直于“底座→目标”方向
+    axis = np.cross([0.0, 0.0, 1.0], horizontal)  # 水平且垂直于倾斜平面内的方向
     axis /= np.linalg.norm(axis)
     angle = math.radians(tilt_deg)
     c, s = math.cos(angle), math.sin(angle)
