@@ -4,7 +4,7 @@
 检查项：
 1. 三行答案的 id 与输入一一对应，10 关节齐全且在限位内；
 2. 用最终关节重算 FK，与答案里的 objects_link 位姿一致；
-3. 答案里的玩具位姿能正变换回输入给定的世界位姿（逆变换闭环）；
+3. 答案里的玩具位姿能正变换回输入给定的世界位姿（逆变换闭环）；按输入位姿算的那一份必须严格闭环；
 4. 三例 contact_detected 为真，距离不超过 max(3 厘米, 玩具包络半径)；
 5. 日志含三次 PASS、无 error/warning；视频存在且非空。
 
@@ -146,6 +146,18 @@ def main():
                 f"{case} 玩具位姿逆变换不闭环：{loop_error:.6f} m（允许 {loop_limit:.6f} m）"
             )
 
+        # 输入口径的闭环：这一份按题面输入位姿算，必须回到输入（恐龙资产 -90° 也包含在内）。
+        # 底盘用的是仿真中实测位姿，与输入标称差约 0.8 毫米，所以位置容差取 2 毫米。
+        input_error = None
+        if "scene_object_in_objects_link_from_input" in answer:
+            from_input = answer_matrix @ pose_matrix(answer["scene_object_in_objects_link_from_input"])
+            input_error = float(np.linalg.norm(expected[:3, 3] - from_input[:3, 3]))
+            input_rot = float(np.linalg.norm(expected[:3, :3] - from_input[:3, :3]))
+            if input_error > 2e-3 or input_rot > 2e-3:
+                problems.append(
+                    f"{case} 按输入口径的玩具位姿不闭环：位置 {input_error:.6f} m，旋转 {input_rot:.6f}"
+                )
+
         # 物理证据：接触标志、距离兜底与力矩/位移至少一项成立。
         distance = float(answer["touch_distance_m"])
         effort = float(answer["finger_effort_nm"])
@@ -162,6 +174,7 @@ def main():
             f"OK    {case}: 距离 {distance:.4f} m（上限 {distance_limit:.4f}），"
             f"力矩 {effort:.3f} N·m，位移 {displacement * 1000:.1f} mm，"
             f"FK 差 {fk_error:.6f} m，闭环差 {loop_error:.6f} m"
+            + (f"，输入口径差 {input_error:.6f} m" if input_error is not None else "")
         )
 
     log_path = ENTRY_ROOT / "assets/q3.log"

@@ -85,6 +85,34 @@ def test_inverse_round_trip(chain):
     )
 
 
+def test_unrelated_joints_do_not_change_output(chain):
+    """头部与手指不在 objects_link 的链上，改动它们不能改变输出位姿。"""
+    base = run_q2.run_record(RECORD, chain)
+    for patch in (
+        {"pitch_joint": 1.0},
+        {"arm_finger_joint1": 0.5, "arm_finger_joint2": 0.5},
+    ):
+        record = json.loads(json.dumps(RECORD))
+        record["joint_state"].update(patch)
+        assert run_q2.run_record(record, chain) == base, patch
+
+
+def test_lift_is_pure_z_translation(chain):
+    """升降关节是移动关节，升高 0.2 米只能让位姿沿 z 平移，姿态不变。"""
+    base = fk.objects_link_transform(chain, ZERO_STATE)
+    lifted = fk.objects_link_transform(chain, {**ZERO_STATE, "lift_joint": 0.2})
+    assert (lifted[:3, 3] - base[:3, 3]) == pytest.approx([0.0, 0.0, 0.2], abs=1e-9)
+    assert lifted[:3, :3] == pytest.approx(base[:3, :3], abs=1e-12)
+
+
+def test_joint6_changes_orientation_only(chain):
+    """joint6 的旋转轴穿过 objects_link 原点，只改姿态不改位置。"""
+    base = fk.objects_link_transform(chain, ZERO_STATE)
+    turned = fk.objects_link_transform(chain, {**ZERO_STATE, "joint6": 1.0})
+    assert turned[:3, 3] == pytest.approx(base[:3, 3], abs=1e-9)
+    assert not np.allclose(turned[:3, :3], base[:3, :3])
+
+
 def test_rpy_quat_consistency():
     """rpy 与 quat_xyzw 表示同一旋转，互转误差 < 1e-6。"""
     samples = [

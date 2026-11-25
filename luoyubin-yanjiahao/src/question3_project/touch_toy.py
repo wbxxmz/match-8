@@ -50,6 +50,14 @@ PREGRASP_HEIGHT = 0.15     # 预抓取点抬高量（米）
 WIDE_GRASP_TOYS = {"rubik_cube"}  # 需要两指从两侧包住的方块玩具
 WIDE_GRASP_CLEARANCE = 0.005      # 宽抓时掌部参考点停在玩具中心上方的高度（米）
 FINGER_OPEN = 0.5                 # 夹爪张开目标（弧度，略低于 URDF 上限 0.506，避免物理过冲越限）
+TRANSFER_HEIGHT = 0.30     # 测例之间的转运高度（米），与单例内部转运一致
+TRANSFER_MICRO_LIFT_FRAMES = 20   # 松指前带玩具微抬的帧数
+TRANSFER_FINGER_FRAMES = 40       # 松指帧数（与闭合对称，减小对玩具的横向推力）
+TRANSFER_LIFT_FRAMES = 40         # 竖直抬到转运高度的帧数
+TRANSFER_BLEND_FRAMES = 70        # 在转运高度把姿态插值到下一例初值的帧数
+TRANSFER_LIFT_DOWN_FRAMES = 30    # 姿态到位后单独下降的帧数
+TRANSFER_SETTLE_FRAMES = 40       # 下降后保持目标命令、等物理收敛的上限帧数
+TRANSFER_ALIGN_FRAMES = 30        # 收尾把实际关节位置分帧硬插到目标的帧数（消除静差瞬移）
 EFFORT_CONTACT = 0.15      # 指关节力矩超过此值即认定真实接触（N·m）
 TOY_DISPLACEMENT = 0.005   # 玩具被推离原位超过此值即认定真实接触（米）
 DEEPEN_DEPTH = 0.01        # 未接触时每次继续下探的深度（米）
@@ -97,6 +105,7 @@ class ContactMonitor:
         self.target = None
         self.unexpected = []
         self.events = 0
+        self.paused = False
         for prim in stage.Traverse():
             path = str(prim.GetPath())
             if not prim.HasAPI(UsdPhysics.RigidBodyAPI):
@@ -114,8 +123,18 @@ class ContactMonitor:
         self.target = None
         self.unexpected = []
         self.events = 0
+        self.paused = False
+
+    def pause(self):
+        """暂停记录：测例之间的过渡动作不属于任何测例，不计入接触证据。
+
+        过渡期间真实发生的扰动另有证据：每次过渡后都会打印三个玩具的位移。
+        """
+        self.paused = True
 
     def record(self, headers, data):
+        if self.paused:
+            return
         for header in headers:
             actors = [str(self.actor_path(actor)) for actor in (header.actor0, header.actor1)]
             if not any(actor.startswith(self.robot_root + "/") for actor in actors):
@@ -252,15 +271,110 @@ def environment_lines():
     return lines
 
 
+def plan_for_target(chain, limits, target_xyz, rotation=None, seed_state=None):
+    """给定底盘系目标点求关键关节；实跑与 --dry-run 共用同一套规划。
+
+    主种子按目标方位角摆放底座，避免解出“反向转身 + 手腕反折”的怪异姿态；
+    底盘已锁定，反作用不会再把这台轮式机器人推走。
+    """
+    rotation = planner.top_down_rotation(target_xyz) if rotation is None else rotation
+    azimuth = math.atan2(float(target_xyz[1]), float(target_xyz[0]))
+    seeds = [planner.reach_seed(azimuth + offset) for offset in (0.0, -0.35, 0.35)]
+    posture = {"joint1": azimuth, **planner.REACH_POSTURE}
+    if seed_state is not None:
+        seeds.append(seed_state)
+    return planner.solve_best(chain, target_xyz, rotation, seeds, limits, posture=posture)
+
+
+def select_records(records, only):
+    """按 --only 过滤输入；id 与玩具名都能匹配，找不到就列出可选值。"""
+    if not only:
+        return records
+    wanted = set(only)
+    chosen = [
+        record for record in records
+        if record["id"] in wanted or record["name"] in wanted
+    ]
+    if not chosen:
+        options = ", ".join(f"{record['id']}({record['name']})" for record in records)
+        raise SystemExit(f"[FAIL] --only 没有匹配任何测例；可选：{options}")
+    return chosen
+
+
+def dry_run(records, chain, limits):
+    """不启动 Isaac，只用输入里的位姿做规划预检。
+
+    输入自带底盘与玩具的世界位姿，因此无需加载 USD 就能验证：
+    目标点换算、IK 是否收敛、解出的姿态是否穿地。
+    """
+    print("\nDRY-RUN：只做规划，不启动仿真、不写答案", flush=True)
+    failed = 0
+    for record in records:
+        name = record["name"]
+        base_pose = {"xyz": record["base_footprint_in_world"]["xyz"], "rpy": record["base_footprint_in_world"]["rpy"]}
+        target = planner.toy_transform_in_base(base_pose, record["scene_object_in_world"])[:3, 3]
+        wide = name in WIDE_GRASP_TOYS
+        rotation = planner.top_down_rotation(target) if wide else planner.approach_rotation(target)
+        clearance = WIDE_GRASP_CLEARANCE if wide else 0.0
+        points = (
+            ("预抓取", target + np.array([0.0, 0.0, PREGRASP_HEIGHT])),
+            ("抓取", target + np.array([0.0, 0.0, clearance])),
+        )
+        print(f"  {record['id']}({name})：玩具在底盘系 {np.round(target, 4).tolist()}", flush=True)
+        for label, point in points:
+            state, pos_error, ori_error = plan_for_target(chain, limits, point, rotation=rotation)
+            # 头部与手指不参与链求解，用输入初值补全后再做穿地检查。
+            full = planner.full_state({**record["joint_state"], **state})
+            below = planner.link_origins_below_floor(chain, full)
+            ok = pos_error <= 1e-3 and ori_error <= 5e-3 and not below
+            failed += 0 if ok else 1
+            print(
+                f"    {label} {np.round(point, 4).tolist()}：位置残差 {pos_error:.6f} m，"
+                f"姿态残差 {ori_error:.6f} rad，穿地 {'是' if below else '否'}"
+                f"{'' if not below else below} -> {'可达' if ok else '不可达'}",
+                flush=True,
+            )
+        print(
+            "    关节近似解 joint1~6 = "
+            + ", ".join(f"{state[key]:.4f}" for key in ("joint1", "joint2", "joint3", "joint4", "joint5", "joint6")),
+            flush=True,
+        )
+    print(f"\nDRY-RUN 完成：{len(records)} 个测例 × 2 个目标点，{failed} 个不可达", flush=True)
+    return 1 if failed else 0
+
+
 def main():
     parser = argparse.ArgumentParser(description="题三：Isaac Sim 中触碰三个玩具")
     parser.add_argument("--scene", default=None, help="abr_scene.usd 路径")
     parser.add_argument("--input", default=str(ENTRY_ROOT / "inputs/q3_demo_input.jsonl"))
-    parser.add_argument("--output", default=str(ENTRY_ROOT / "answers/q3_demo_output.jsonl"))
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="答案路径；缺省写 answers/q3_demo_output.jsonl，--only 时缺省不写文件",
+    )
     parser.add_argument("--urdf-root", default=None, help="官方 URDF 目录（缺省自动查找）")
     parser.add_argument("--headless", action="store_true", help="无窗口运行（生成答案用）")
     parser.add_argument("--video", default=None, help="同时录制视口视频到该路径（.mp4）")
     parser.add_argument("--env-only", action="store_true", help="只打印环境证据后退出，不启动仿真")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="不启动 Isaac，只用输入位姿做规划预检（目标点、IK 残差、是否穿地）",
+    )
+    parser.add_argument(
+        "--only",
+        nargs="+",
+        default=None,
+        metavar="ID_OR_NAME",
+        help="只跑指定测例，可写 id 或玩具名（如 touch_toy_2 rubik_cube）",
+    )
+    parser.add_argument(
+        "--finger-gap",
+        type=float,
+        default=0.0,
+        metavar="RAD",
+        help="手指闭合终点的指关节角（弧度），默认 0；留缝会削弱夹持力矩，正式答案保持 0",
+    )
     parser.add_argument(
         "--hold-sec",
         type=float,
@@ -276,10 +390,13 @@ def main():
     if args.env_only:
         return
 
-    scene_path = find_scene(args.scene)
-    records = load_records(args.input)
+    records = select_records(load_records(args.input), args.only)
     chain = planner.load_robot_chain(args.urdf_root)
     limits = planner.load_limits()
+    if args.dry_run:
+        sys.exit(dry_run(records, chain, limits))
+
+    scene_path = find_scene(args.scene)
     print("场景：", scene_path, flush=True)
     print("关节链：", " → ".join(joint.name for joint in chain), flush=True)
 
@@ -445,19 +562,101 @@ def main():
         主种子按目标方位角摆放底座，避免解出“反向转身 + 手腕反折”的怪异姿态；
         底盘已锁定，反作用不会再把这台轮式机器人推走。
         """
-        rotation = planner.top_down_rotation(target_xyz) if rotation is None else rotation
-        azimuth = math.atan2(float(target_xyz[1]), float(target_xyz[0]))
-        seeds = [planner.reach_seed(azimuth + offset) for offset in (0.0, -0.35, 0.35)]
-        posture = {"joint1": azimuth, **planner.REACH_POSTURE}
-        if seed_state is not None:
-            seeds.append(seed_state)
-        return planner.solve_best(chain, target_xyz, rotation, seeds, limits, posture=posture)
+        return plan_for_target(chain, limits, target_xyz, rotation=rotation, seed_state=seed_state)
 
     def move_towards(target, frames, name):
         start = read_state()
         for frame in range(1, frames + 1):
             ratio = planner.smoothstep(frame / frames)
             drive(planner.interpolate(start, target, ratio), PHYSICS_STEPS_PER_FRAME)
+
+    def blend_all(target, frames):
+        """全部 10 个关节一起做 smoothstep 插值（含头部与手指，不只是链上 7 个）。"""
+        start = read_state()
+        for frame in range(1, frames + 1):
+            ratio = planner.smoothstep(frame / frames)
+            command = {
+                key: start[key] + (target[key] - start[key]) * ratio
+                for key in planner.JOINTS
+            }
+            drive(command, PHYSICS_STEPS_PER_FRAME)
+
+    def align_positions(target, frames):
+        """把实际关节位置分帧硬插到目标，消除物理跟随静差。
+
+        最后一段是“保持目标等物理收敛”，但升降柱要托着手臂、PD 目标角与实际角
+        天然有静差（实测可达 0.069 弧度）。若直接 teleport 到初值，这一差值会在
+        单帧内被拉平，视频里就是一次瞬移。这里用 set_joint_positions 每帧只走
+        残差的 smoothstep 份额，画面连续；最后一帧实际位置已等于目标，teleport
+        不再产生位移。
+        """
+        start = read_state()
+        for frame in range(1, frames + 1):
+            ratio = planner.smoothstep(frame / frames)
+            command = {
+                key: start[key] + (target[key] - start[key]) * ratio
+                for key in planner.JOINTS
+            }
+            vector = state_vector(command)
+            articulation.set_joint_positions(vector)
+            articulation.set_joint_position_targets(vector)
+            advance(PHYSICS_STEPS_PER_FRAME)
+
+    def retract_and_transfer(next_initial):
+        """上一例接触后回撤到转运高度，再平滑插到下一例初值，替代瞬移。
+
+        原来的 teleport 会让机械臂在第二、三例开头突然跳变；这里改成连续动作：
+        先原地松指（避免把玩具带起来），再只升降抬到 0.30 米（不做横移，
+        避免刮到桌面上其他玩具），然后在 0.30 米高度把姿态插到下一例初值，
+        最后单独把升降降到位。姿态与升降分开插值是有意的：一起插值会在末段
+        一边下降一边横移，实测会扫到旁边的玩具，日志里出现“意外接触”。
+
+        松指前先带着玩具微抬 2 厘米：指尖沿玩具侧面向上脱开，比原地横向张开
+        更不容易把玩具推走——实测原地张开会把魔方推偏，下一例下降时右指会擦到它。
+        """
+        before = {toy: world_pose(prim)["xyz"] for toy, prim in TOY_PRIMS.items()}
+
+        micro = read_state()
+        micro["lift_joint"] = min(TRANSFER_HEIGHT, micro["lift_joint"] + 0.02)
+        blend_all(micro, TRANSFER_MICRO_LIFT_FRAMES)
+
+        opened = read_state()
+        opened["arm_finger_joint1"] = FINGER_OPEN
+        opened["arm_finger_joint2"] = FINGER_OPEN
+        blend_all(opened, TRANSFER_FINGER_FRAMES)
+        blend_all(opened, 10)  # 松指后停一拍，等玩具落稳
+
+        lifted = read_state()
+        lifted["lift_joint"] = TRANSFER_HEIGHT
+        blend_all(lifted, TRANSFER_LIFT_FRAMES)
+
+        target = planner.full_state(next_initial)
+        raised = dict(target)
+        raised["lift_joint"] = TRANSFER_HEIGHT
+        blend_all(raised, TRANSFER_BLEND_FRAMES)
+        blend_all(target, TRANSFER_LIFT_DOWN_FRAMES)
+
+        # 物理跟随有滞后：最后一帧命令发出时关节还差一点，若立即 teleport，
+        # 视频里就是一个孤立尖峰。先保持目标命令等物理尽量收敛……
+        residual = 0.0
+        for _ in range(TRANSFER_SETTLE_FRAMES):
+            drive(target, PHYSICS_STEPS_PER_FRAME)
+            actual = read_state()
+            residual = max(abs(actual[key] - target[key]) for key in planner.JOINTS)
+            if residual <= 0.002:
+                break
+        worst = max(planner.JOINTS, key=lambda key: abs(read_state()[key] - target[key]))
+        print(f"  过渡驱动残差 {residual:.4f}（最大关节 {worst}）", flush=True)
+        # ……剩下的静差（重力压着升降柱与手臂，PD 到不了目标）用分帧硬插补齐：
+        # 每帧只走残差的 1/N，视觉连续，最后 teleport 就变成无位移校正。
+        align_positions(target, TRANSFER_ALIGN_FRAMES)
+        residual = max(abs(read_state()[key] - target[key]) for key in planner.JOINTS)
+        print(f"  过渡对齐残差 {residual:.4f}", flush=True)
+
+        for toy, prim in TOY_PRIMS.items():
+            after = world_pose(prim)["xyz"]
+            shift = float(np.linalg.norm(np.array(after) - np.array(before[toy])))
+            print(f"  过渡后 {toy} 位移 {shift * 1000:.1f} mm", flush=True)
 
     def settle_to(target, target_xyz, tolerance=0.02, max_frames=240):
         """保持目标直到夹爪真的到位。
@@ -487,11 +686,12 @@ def main():
         """把目标锁在当前关节位置，给物理时间稳定，避免继续压着玩具。"""
         drive(read_state(), steps)
 
-    def close_fingers(steps=60):
+    def close_fingers(steps=60, gap=0.0):
         """合拢两指直到夹住玩具：力矩超过接触阈值就停，返回过程中的峰值力矩。
 
         夹爪张着探到玩具上方时，指关节几乎不受力（实测 0.01~0.02 N·m），
         距离再近也不能证明碰到；只有合拢手指被玩具挡住，力矩才会升上来。
+        gap 是闭合终点保留的指关节角（弧度），默认 0；留缝会削弱夹持力矩。
         """
         start = read_state()
         peak = 0.0
@@ -499,7 +699,7 @@ def main():
             ratio = planner.smoothstep(frame / steps)
             command = read_state()
             for key in ("arm_finger_joint1", "arm_finger_joint2"):
-                command[key] = start[key] * (1.0 - ratio)
+                command[key] = start[key] * (1.0 - ratio) + gap * ratio
             drive(command, PHYSICS_STEPS_PER_FRAME)
             peak = max(peak, finger_effort())
             if frame % 10 == 0:
@@ -606,14 +806,21 @@ def main():
     base_pose = {"xyz": base_world["xyz"], "rpy": base_world["rpy"]}
     results = []
 
-    for record in records:
+    for index, record in enumerate(records):
         name = record["name"]
         case_id = record["id"]
         print(f"\n=== {case_id} ({name}) ===", flush=True)
-        contact_monitor.begin(TOY_PRIMS[name])
 
         initial = planner.full_state(record["joint_state"])
+        if index:
+            contact_monitor.pause()  # 过渡动作不计入本例接触证据
+            print(
+                f"过渡：松指后抬到 {TRANSFER_HEIGHT:.2f} 米，再平滑插值到本例初值",
+                flush=True,
+            )
+            retract_and_transfer(record["joint_state"])
         teleport(initial)
+        contact_monitor.begin(TOY_PRIMS[name])
         actual = read_state()
         initial_error = max(abs(actual[key] - initial[key]) for key in planner.JOINTS)
         print(f"初值读回最大误差 {initial_error:.6f} rad/m", flush=True)
@@ -713,7 +920,7 @@ def main():
             peak_effort = descent_effort
         else:
             print("-- 合拢手指", flush=True)
-            peak_effort = close_fingers(steps=90 if wide_grasp else 60)
+            peak_effort = close_fingers(steps=90 if wide_grasp else 60, gap=args.finger_gap)
         current_distance = distance(name, planner.pose_in_parent(planner.fk_objects_link(chain, read_state())))
         effort = max(peak_effort, finger_effort())
         toy_shift = float(np.linalg.norm(
@@ -769,6 +976,22 @@ def main():
         print(f"  底盘位移 {base_shift:.4f} m", flush=True)
         toy_in_base = planner.toy_transform_in_base(base_pose, toy_pose(name))
         toy_in_objects = planner.toy_pose_in_objects(objects_in_base, toy_in_base)
+        # 题面输入把玩具朝向记为 rpy=0，场景资产自带旋转（恐龙 rotateXYZ=(0,0,-90)），
+        # 所以另按输入位姿算一份，供按题面输入复算的评审对账；答案主字段仍是仿真实际位姿。
+        # 底盘用仿真实测位姿（与输入标称差约 0.8 毫米），玩具用输入位姿。
+        toy_in_base_from_input = planner.toy_transform_in_base(base_pose, record["scene_object_in_world"])
+        toy_in_objects_from_input = planner.toy_pose_in_objects(objects_in_base, toy_in_base_from_input)
+        yaw_gap = math.degrees(
+            math.atan2(toy_in_base[1, 0], toy_in_base[0, 0])
+            - math.atan2(toy_in_base_from_input[1, 0], toy_in_base_from_input[0, 0])
+        )
+        yaw_gap = (yaw_gap + 180.0) % 360.0 - 180.0
+        input_gap = float(np.linalg.norm(toy_in_base[:3, 3] - toy_in_base_from_input[:3, 3]))
+        print(
+            f"  玩具位姿：仿真实测与输入口径相差 {input_gap:.4f} m / {yaw_gap:+.1f}°"
+            f"（资产自带旋转 + 触碰推动所致，答案两个字段都给出）",
+            flush=True,
+        )
         touch_distance = float(np.linalg.norm(toy_in_base[:3, 3] - objects_in_base[:3, 3]))
         # 触碰判据：PhysX 接触报告或物理证据（回升/力矩/位移）优先；距离只会让判定更严，
         # 不再单独判 PASS——距离近不等于碰到。
@@ -785,6 +1008,9 @@ def main():
             "final_joint_state": {key: round(float(final_state[key]), 6) for key in planner.JOINTS},
             "objects_link_in_base_footprint": objects_pose,
             "scene_object_in_objects_link": planner.pose_in_parent(toy_in_objects),
+            "scene_object_in_objects_link_from_input": planner.pose_in_parent(toy_in_objects_from_input),
+            "scene_object_input_gap_m": round(input_gap, 6),
+            "scene_object_input_gap_yaw_deg": round(yaw_gap, 3),
             "touch_distance_m": round(touch_distance, 6),
             "min_distance_m": round(min(best_distance, touch_distance), 6),
             "contact_detected": bool(passed),
@@ -796,12 +1022,15 @@ def main():
         }
         results.append(result)
 
-    output = Path(args.output)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w", encoding="utf-8") as handle:
-        for item in results:
-            handle.write(json.dumps(item, ensure_ascii=False) + "\n")
-    print(f"\n已写入 {len(results)} 行 -> {output}", flush=True)
+    if args.only and args.output is None:
+        print(f"\n[SKIP] 只跑了 {len(results)} 个测例（--only），未写答案；需要写请显式指定 --output", flush=True)
+    else:
+        output = Path(args.output or (ENTRY_ROOT / "answers/q3_demo_output.jsonl"))
+        output.parent.mkdir(parents=True, exist_ok=True)
+        with output.open("w", encoding="utf-8") as handle:
+            for item in results:
+                handle.write(json.dumps(item, ensure_ascii=False) + "\n")
+        print(f"\n已写入 {len(results)} 行 -> {output}", flush=True)
 
     if writer is not None:
         writer.release()

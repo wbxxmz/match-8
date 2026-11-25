@@ -55,7 +55,8 @@ yanjiahao-luoyubin/
 │   ├── robot_urdf.py         # 展开官方 xacro，替换 package:// 路径
 │   ├── config/joint_limits.json
 │   ├── config/q1.rviz
-│   └── launch/q1.launch.py
+│   ├── launch/q1.launch.py
+│   └── tests/                # 驱动单测 + 0~127 全种子校验回归
 ├── src/question2_project/
 │   ├── urdf_chain.py         # 展开官方 URDF，抽取 base_footprint → objects_link 链
 │   ├── transforms.py         # rpy ↔ 矩阵 ↔ 四元数、逆变换
@@ -66,7 +67,8 @@ yanjiahao-luoyubin/
 │   ├── model/                # 官方 xacro 源码副本（兜底用，不含 mesh）
 │   ├── config/q2.rviz
 │   ├── launch/q2.launch.py
-│   └── tests/test_gold.py    # 金标与自检用例
+│   ├── tests/test_gold.py    # 金标、语义不变量与自检用例
+│   └── tests/test_cross_validation.py # PyKDL 第二套实现交叉校验（含随机姿态）
 ├── src/question3_project/
 │   ├── planner.py            # 底盘坐标变换、逆运动学、位姿换算（不依赖 Isaac）
 │   ├── touch_toy.py          # Isaac Sim 里置初值、下降触碰、合拢与写答案
@@ -138,11 +140,11 @@ python3 src/question1_project/check_output.py
 预期输出：
 
 ```
-[PASS] 第 1 行 'q1_all_seed7'：5 帧顺序、10 关节、限位与最终态均一致
+[PASS] 第 1 行 'q1_all_seed7'：5 帧顺序、10 关节、限位、阶段隔离、mimic 与最终态均一致
 自检通过：1 行答案全部符合题面要求
 ```
 
-脚本会逐项检查：答案行数与 `id` 是否对应输入、五帧顺序、每帧 10 个关节、数值是否在限位内、夹爪开合值、`final_joint_state` 是否等于末帧。任何一项不符会打印 `[FAIL]` 并以退出码 1 结束。
+脚本会逐项检查：答案行数与 `id` 是否对应输入、五帧顺序、每帧 10 个关节、数值是否有限且在限位内、夹爪开合值、`final_joint_state` 是否等于末帧，以及三条容易漏的规则：阶段隔离（非本阶段关节必须与上一帧逐位相同）、本阶段至少一个关节真的动了、手指 mimic 关系（系数与偏置直接从官方 URDF 读取，不用手抄）。任何一项不符会打印 `[FAIL]` 并以退出码 1 结束。
 
 单元测试：
 
@@ -150,7 +152,7 @@ python3 src/question1_project/check_output.py
 python3 -m pytest -q src/question1_project/tests
 ```
 
-预期输出 `10 passed`。覆盖：同 seed 确定性、换 seed 变化、采样值在限位内、限位校验拒绝越界/未知/缺失关节、五段结构与末帧一致、输入错误报行号、非有限时长/小数 seed/非法 step 被拒。
+预期输出 `13 passed`。覆盖：同 seed 确定性、换 seed 变化、采样值在限位内、限位校验拒绝越界/未知/缺失关节、五段结构与末帧一致、输入错误报行号、非有限时长/小数 seed/非法 step 被拒，以及 0~127 每颗种子的答案逐个过一遍正式校验器（128 颗种子至少 120 种不同目标，防止 seed 分支退化）。
 
 ### 行为说明
 
@@ -168,6 +170,13 @@ python3 -m pytest -q src/question1_project/tests
 - 所有目标值发布前用 `config/joint_limits.json` 校验（该文件由官方 URDF 的 `limit` 字段生成），越界直接报错。
 - ROS 模式先保持官方零位预热（`--warmup`，launch 默认 8 秒）再开始动作，消除 RViz 收到首帧前的一次性跳变。
 - 输出沿用输入 `id`；`keyframes` 每项含 `name` 与 10 关节 `joint_state`；`final_joint_state` 与最后一个关键帧一致。
+
+### 与官方 launch 的差异（两个实测易错点）
+
+本作品自带 `launch/q1.launch.py`，不直接使用官方 `display_bajie_robot_urdf.launch.py`。按官方 launch 自行组装环境时，实测会遇到：
+
+1. **`use_sim_time` 默认是 `true`**：官方 launch 第 15 行把该参数默认设为 `true`，但没有仿真时钟 `/clock` 时，`rviz2` 按仿真时间等待，时间轴不走、画面像卡住，容易误判成“驱动没生效”。用真实时间必须显式传 `use_sim_time:=false`；本作品 launch 不启用仿真时间。
+2. **`joint_state_publisher_gui` 会和驱动抢 `/joint_states`**：官方 launch 第 47-49 行启动的滑块窗口是独立节点，不是 RViz 内置面板；它与本作品的驱动脚本同时向 `/joint_states` 发布，两个发布者互相覆盖，表现为画面抖动或姿态被拉回零位。本作品 launch 不启动该节点；如需手动拖滑块调试，先停掉驱动脚本。
 
 ### 验证
 
@@ -218,9 +227,9 @@ python3 src/question2_project/run_q2.py \
 python3 -m pytest -q src/question2_project/tests
 ```
 
-预期输出 `9 passed`。覆盖：关节链顺序（含头部/手指不在链上）、两个位姿与金标比对（`xyz` 差 `< 1e-4`）、正逆往返误差 `< 1e-6`、`rpy`/`quat_xyzw` 互转一致 `< 1e-6`、内置模型副本独立复现金标、缺关节或未知关节报错、位姿含 `nan`/`inf` 报错、答案逐行可解析且与重算一致。
+预期输出 `18 passed`。覆盖：关节链顺序（含头部/手指不在链上）、两个位姿与金标比对（`xyz` 差 `< 1e-4`）、正逆往返误差 `< 1e-6`、`rpy`/`quat_xyzw` 互转一致 `< 1e-6`、内置模型副本独立复现金标、缺关节或未知关节报错、位姿含 `nan`/`inf` 报错、答案逐行可解析且与重算一致；另加三条语义不变量（头部/手指等无关关节不影响输出、`lift_joint` 只沿 z 平移且姿态不变、`joint6` 只改姿态不改位置）。
 
-官方只提供 `demo_zero` 一组金标，非零姿态没有官方对照值。代码用单调性抽查做基本检查（`lift_joint` +0.2 米时 z 精确 +0.2），这不构成精度证明。
+官方只提供 `demo_zero` 一组金标，零位对得上不代表整条链对。为此另有一套 PyKDL 独立交叉校验：自己从 URDF 回溯关节链、自己构造 KDL 链（不复用产品代码的建模逻辑），覆盖零位、逐个关节、每个关节的限位边界、100 组随机姿态、20 次物体坐标变换，位置与姿态矩阵误差阈值 `1e-9`（实测 `1e-16` 量级）。缺 PyKDL 时该组测试自动跳过并在输出里说明。
 
 ### 可选可视化（不影响答案）
 
@@ -279,6 +288,18 @@ export OMNI_KIT_ACCEPT_EULA=YES ROS_DISTRO=humble
 
 `python.sh` 换成自己的 Isaac Sim 4.5 安装路径即可。加 `--video video/q3_touch.mp4` 会在无窗口模式下用独立相机同时录制触碰视频（需要 `opencv-python`）；去掉 `--headless` 则打开 Isaac Sim 图形窗口，视口自动对准三个玩具，可实时观看；`--scene` 省略时按 `BAJIE_SIM_ROOT`（指向 `sim/` 仓库根目录）或从作品目录逐级向上查找 `sim/scene/abr_scene.usd`。
 
+### 离线预检（不需要 Isaac）
+
+只用输入里的底盘与玩具位姿验证坐标换算与 IK 可达性，不启动仿真、不写答案，普通 `python3` 即可：
+
+```bash
+python3 src/question3_project/touch_toy.py --dry-run
+```
+
+输出每个玩具的预抓取点与抓取点的位置/姿态残差、是否穿地，3 个测例 × 2 个点全部标 `可达` 时退出码为 0。只想看一个玩具加 `--only rubik_cube`（id 或玩具名都行）；`--only` 默认不写答案，避免半份答案覆盖正式文件，需要写时显式加 `--output`。
+
+`--finger-gap <弧度>` 控制闭合终点保留的指关节角，默认 0；留缝会削弱夹持力矩，正式答案保持 0。
+
 ### 实现路径
 
 不走 ROS 话题收发，直接用 Isaac 的 `Articulation` 接口下发关节目标（Bridge 仍按官方场景要求启用，否则场景里的 ROS 2 OmniGraph 节点会报错）。这样控制回路不依赖 DDS 时序，答案可复现，也不需要额外的控制器节点。
@@ -294,6 +315,8 @@ export OMNI_KIT_ACCEPT_EULA=YES ROS_DISTRO=humble
 5. 斜抓玩具（恐龙、软玩具）下降中监测触底回升与指力矩，未接触才合拢两指；魔方改为竖直张指包住、直接合拢夹住；
 6. 读回最终关节，写一行 JSONL。
 
+测例之间不做瞬移。上一例接触结束后，程序先带着玩具微抬 2 厘米再松指（原地张开会把玩具横向推走），然后只升降抬到 0.30 米转运高度，在这个高度上把姿态平滑插值到下一例初值，最后单独把升降降到位并等物理收敛；剩下的跟随静差再用 30 帧分帧补齐，使下一例的“置初值”不再产生可见跳变。过渡动作不属于任何测例，期间的接触记录暂停；每段过渡后打印三个玩具的位移，便于核对有没有被碰动。
+
 ### 坐标与场景映射
 
 | 项 | 值 |
@@ -305,6 +328,8 @@ export OMNI_KIT_ACCEPT_EULA=YES ROS_DISTRO=humble
 | `soft_toy` 软玩具 | `/World/company/toys/spiderman_grasp` |
 
 映射是按输入给的玩具世界坐标与场景实际坐标逐一对出来的，三个测例差值分别为 0.0000、0.0013、0.0001 米。
+
+**恐龙资产自带 -90° 旋转**：`toy_yellow_dragon` 在场景里的 `xformOp:rotateXYZ` 是 `(0, 0, -90)`（缩放 0.2），而题面输入给它的 `rpy` 是 `[0, 0, 0]`。本作品规划只用玩具中心点，抓取姿态与玩具自身朝向无关，所以不影响触碰；但“玩具在夹爪参考系”的报告有两种口径：答案主字段 `scene_object_in_objects_link` 用仿真中的实际位姿（含 -90° 与触碰推动），`scene_object_in_objects_link_from_input` 用题面输入位姿（底盘取仿真实测，与输入标称差约 0.8 毫米）。两者差异同时写进 `scene_object_input_gap_m` / `scene_object_input_gap_yaw_deg`：实测魔方 1.7 毫米 / -1.8°，恐龙 5.4 毫米 / -102.4°（资产 -90° + 被推动 -12°），软玩具 4.1 毫米 / +1.4°。评审按输入复算或按仿真复算，都能对上其中一个字段。
 
 ### 触碰判据
 
@@ -326,10 +351,10 @@ export OMNI_KIT_ACCEPT_EULA=YES ROS_DISTRO=humble
 | id | 玩具 | 最终距离 | 峰值指力矩 | 玩具位移 | PhysX 接触对（分离 / 冲量） | 结果 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `touch_toy_1` | 魔方 | 0.0054 m | 1.622 N·m | 1.7 mm | `gripper_left_link` ↔ `Rubik`（0.289 mm / 0.0195 N·s） | PASS |
-| `touch_toy_2` | 恐龙 | 0.0039 m | 0.433 N·m | 3.9 mm | `gripper_left_link` ↔ `toy_yellow_dragon`（0.499 mm / 0.000075 N·s） | PASS |
-| `touch_toy_3` | 软玩具 | 0.0041 m | 0.294 N·m | 4.1 mm | `gripper_right_link` ↔ `spiderman_grasp`（0.016 mm / 0.000018 N·s） | PASS |
+| `touch_toy_2` | 恐龙 | 0.0063 m | 0.157 N·m | 6.3 mm | `gripper_left_link` ↔ `toy_yellow_dragon`（0.121 mm / 0.000666 N·s） | PASS |
+| `touch_toy_3` | 软玩具 | 0.0041 m | 0.322 N·m | 4.1 mm | `gripper_right_link` ↔ `spiderman_grasp`（0.017 mm / 0.000052 N·s） | PASS |
 
-三个测例的初值读回最大误差都不超过 0.000021 rad/m，USD 位姿与 FK 重算偏差最大 0.02 毫米，底盘位移 0.0000 米（已锁定）。物理仿真对接触细节敏感，重跑时数值会小幅变化，但三个玩具都会被执行到。
+三个测例的初值读回最大误差都不超过 0.000121 rad/m，USD 位姿与 FK 重算偏差最大 0.02 毫米，底盘位移 0.0000 米（已锁定）。物理仿真对接触细节敏感，重跑时数值会小幅变化，但三个玩具都会被执行到。
 
 `answers/q3_demo_output.jsonl` 每行字段：
 
@@ -338,7 +363,9 @@ export OMNI_KIT_ACCEPT_EULA=YES ROS_DISTRO=humble
 | `id` | 沿用输入 |
 | `final_joint_state` | 最终 10 关节状态 |
 | `objects_link_in_base_footprint` | 夹爪参考系在底盘系的位姿 |
-| `scene_object_in_objects_link` | 玩具在夹爪参考系的位姿（题面要求的“玩具相对于夹爪”报告） |
+| `scene_object_in_objects_link` | 玩具在夹爪参考系的位姿（题面要求的“玩具相对于夹爪”报告），按仿真中的实际位姿计算 |
+| `scene_object_in_objects_link_from_input` | 同一报告，但按输入 `scene_object_in_world` 计算（题面输入把玩具朝向记为 `rpy=0`） |
+| `scene_object_input_gap_m` / `scene_object_input_gap_yaw_deg` | 上面两种口径的差异：位置（米）与偏航（度），用来一眼看出资产朝向与输入记法的出入 |
 | `touch_distance_m` / `min_distance_m` | 最终/过程中夹爪参考点到玩具中心的最小距离 |
 | `contact_detected` | 触碰判据是否满足 |
 | `finger_effort_nm` | 峰值指关节力矩 |
@@ -354,7 +381,7 @@ python3 src/question3_project/verify_q3.py
 python3 -m pytest src/question3_project/tests -q
 ```
 
-第一条检查产物：答案行数与 id、10 关节与限位、FK 重算、玩具位姿逆变换闭环、接触证据、日志与视频；同时做环境预检（Python/numpy 版本、URDF 关节链、场景文件、Isaac python.sh），缺场景或 Isaac 只给 WARN，不影响离线校验。第二条是规划回归测试：位姿变换闭环、答案与 FK 一致、三个玩具中心的 IK 残差、以及一组不同初值的 FK 与限位检查。
+第一条检查产物：答案行数与 id、10 关节与限位、FK 重算、玩具位姿逆变换闭环（主字段允许“玩具位移 + 2 毫米”，输入口径字段严格回到输入）、接触证据、日志与视频；同时做环境预检（Python/numpy 版本、URDF 关节链、场景文件、Isaac python.sh），缺场景或 Isaac 只给 WARN，不影响离线校验。第二条是规划回归测试：位姿变换闭环、答案与 FK 一致、三个玩具中心的 IK 残差、以及一组不同初值的 FK 与限位检查。
 
 预期输出：
 
@@ -363,9 +390,9 @@ ENV   Python 3.10.12，numpy 2.2.6
 ENV   关节链 12 个关节加载成功
 ENV   场景 /home/yjh/bajie-competition/sim/scene/abr_scene.usd
 ENV   Isaac python /mnt/hbotdata/tmp/isaac-sim/python.sh
-OK    touch_toy_1: 距离 0.0054 m（上限 0.0502），力矩 1.622 N·m，位移 1.7 mm，FK 差 0.000001 m，闭环差 0.002077 m
-OK    touch_toy_2: 距离 0.0039 m（上限 0.1306），力矩 0.433 N·m，位移 3.9 mm，FK 差 0.000001 m，闭环差 0.003732 m
-OK    touch_toy_3: 距离 0.0041 m（上限 0.0691），力矩 0.294 N·m，位移 4.1 mm，FK 差 0.000001 m，闭环差 0.004233 m
+OK    touch_toy_1: 距离 0.0054 m（上限 0.0502），力矩 1.622 N·m，位移 1.7 mm，FK 差 0.000001 m，闭环差 0.002077 m，输入口径差 0.000780 m
+OK    touch_toy_2: 距离 0.0063 m（上限 0.1306），力矩 0.157 N·m，位移 6.3 mm，FK 差 0.000001 m，闭环差 0.006182 m，输入口径差 0.000781 m
+OK    touch_toy_3: 距离 0.0041 m（上限 0.0691），力矩 0.322 N·m，位移 4.1 mm，FK 差 0.000000 m，闭环差 0.004234 m，输入口径差 0.000780 m
 PASS  题三答案、日志与视频自检通过
 ```
 
@@ -373,15 +400,16 @@ PASS  题三答案、日志与视频自检通过
 
 距离随物理细节小幅浮动，`contact_detected` 恒为 `True`。跑完会打印三行结果汇总；图形模式默认再保持窗口 90 秒，方便看清最后一个玩具的最终姿态，可用 `--hold-sec 0` 关闭或改时长。
 
-**重跑差异**：同一套宽抓方案的不同次 headless 运行里，魔方 0.0051~0.0054 米、恐龙 0.0039~0.0179 米、软玩具 0.0041 米；差异主要来自“峰值指力矩达到阈值即停”的位置不同，三例都满足判据，且每次都有 PhysX 接触对上报。上一版斜抓方案做过 GUI/headless 对照：距离最大差 0.4 毫米、峰值力矩最大差 0.028 N·m、玩具位移最大差 0.5 毫米；宽抓方案在图形模式下也完整跑过三个测例，与当次 headless 相比距离最大差 0.3 毫米、峰值力矩最大差 0.198 N·m、玩具位移最大差 1.4 毫米，三例接触判定一致（明细见 PROJECT.md 8.6）。判定现在以 PhysX 接触报告为硬证据，渲染节拍不参与判定，答案以 headless 为准。
+**重跑差异**：同一套宽抓方案的不同次 headless 运行里，魔方 0.0051~0.0055 米、恐龙 0.0039~0.0179 米、软玩具 0.0041 米；差异主要来自“峰值指力矩达到阈值即停”的位置不同，三例都满足判据，且每次都有 PhysX 接触对上报。上一版斜抓方案做过 GUI/headless 对照：距离最大差 0.4 毫米、峰值力矩最大差 0.028 N·m、玩具位移最大差 0.5 毫米；宽抓方案在图形模式下也完整跑过三个测例，与当次 headless 相比距离最大差 0.3 毫米、峰值力矩最大差 0.198 N·m、玩具位移最大差 1.4 毫米，三例接触判定一致（明细见 PROJECT.md 8.6）。判定现在以 PhysX 接触报告为硬证据，渲染节拍不参与判定，答案以 headless 为准。
 
 ### 素材
 
 | 文件 | 内容 |
 | --- | --- |
 | `assets/q3_env.log` | 环境证据（`--env-only` 只打印环境、不启动仿真，3 秒内退出）：Linux 6.8 / Python 3.10.15 / numpy 1.26.0 / git commit / RTX 4060 Laptop + 驱动 580.178.04 / Isaac Sim 4.5.0-rc.36+release.19112；该模式不加载 ROS，故 `ROS_DISTRO` 显示 unset |
-| `assets/q3.log` | 完整终端日志：场景加载、底盘锁定、三个测例的初值误差、坐标核对、玩具包围盒、IK 残差、转运姿态、到位误差、距离曲线、判据、PhysX 接触对（分离距离与冲量）、底盘位移、结果汇总与写入（462 行，0 条 error/warning） |
-| `video/q3_touch.mp4` | Isaac Sim 触碰视频：1280×720、15 fps、38 秒（568 帧），mp4（MPEG-4），整条机械臂与三个玩具均入镜，可见斜向上转运、下降、两指夹住玩具的全过程 |
+| `assets/q3.log` | 完整终端日志：场景加载、底盘锁定、三个测例的初值误差、坐标核对、玩具包围盒、IK 残差、转运姿态、到位误差、距离曲线、判据、两种口径的玩具位姿差、PhysX 接触对（分离距离与冲量）、测例间过渡的收敛残差与玩具位移、底盘位移、结果汇总与写入（137 行，0 条 error/warning；Isaac 引擎自身的启动信息与告警已省略，程序输出全保留） |
+| `video/q3_touch.mp4` | Isaac Sim 触碰视频：1280×720、15 fps、56.5 秒（847 帧），mp4（MPEG-4），整条机械臂与三个玩具均入镜，可见斜向上转运、下降、两指夹住玩具，以及测例之间“松指—抬升—高位转向—下降”的连续过渡 |
+| `video/q3_touch_h264.mp4` | 同一段录制的 H.264 版本（847 帧、56.5 秒、9.3 MB）：原始文件为 `mp4v` 编码，部分编辑器/浏览器播放器只认 H.264，遂无损时间轴转码一份便于直接播放；画面经过有损压缩，接触帧号与上表一致 |
 | `docs/q3_contact_sheet.png` | 上排三个接触特写（魔方 / 恐龙 / 软玩具），下为同刻全景；每格标出帧号与时间，红圈标出目标玩具 |
 | `docs/q3_contact_zoom.png` | 三张接触特写横排：两指夹住魔方、恐龙、软玩具，红圈标出目标玩具 |
 
@@ -390,11 +418,11 @@ PASS  题三答案、日志与视频自检通过
 | 时间 | 画面 | 本刻证据 |
 | --- | --- | --- |
 | 00:03 | 抬升并转向，手臂斜向上到 0.30 米 | 不折回机身 |
-| 00:10 | 两指夹住魔方（第 150 帧） | 距离 0.0054 米，峰值力矩 1.622 N·m，`gripper_left_link` ↔ `Rubik` |
-| 00:22 | 夹住恐龙（第 344 帧） | 距离 0.0039 米，峰值力矩 0.433 N·m，`gripper_left_link` ↔ `toy_yellow_dragon` |
-| 00:34 | 夹住软玩具（第 512 帧） | 距离 0.0041 米，峰值力矩 0.294 N·m，`gripper_right_link` ↔ `spiderman_grasp` |
+| 00:14 | 两指夹住魔方（第 216 帧） | 距离 0.0054 米，峰值力矩 1.622 N·m，`gripper_left_link` ↔ `Rubik` |
+| 00:35 | 夹住恐龙（第 519 帧） | 距离 0.0063 米，峰值力矩 0.157 N·m，`gripper_left_link` ↔ `toy_yellow_dragon` |
+| 00:55 | 夹住软玩具（第 819 帧） | 距离 0.0041 米，峰值力矩 0.322 N·m，`gripper_right_link` ↔ `spiderman_grasp` |
 
-录制视频的命令在上面基础上加 `--video video/q3_touch.mp4`；相机位置与注视点固定在 `touch_toy.py` 顶部的 `VIDEO_EYE` / `VIDEO_TARGET`。四宫格与特写直接由这份视频抽帧生成（每 4 个物理步一帧，视频帧号 = 物理步数 ÷ 4），抽帧脚本不随作品提交。三个接触帧号是逐帧核验过的：先按“指尖与目标玩具颜色中心的像素距离”扫出候选区间，再逐帧放大核对指尖与玩具的间隙，最终取 150 / 344 / 512（见 `docs/历史记录.md` H126）。软玩具一格用的是手臂完全落到底之后的一帧：此时夹爪本体与近侧手指分别在玩具两侧，但腕部相机从画面上方遮住了手指与玩具的接触面，所以这一格不如魔方、恐龙两格直观；日志里同一次下降结束时的距离是 0.0017 米、合拢力矩 0.294 N·m。注意帧号只对 `video/q3_touch.mp4` 这份视频有效，换一次重跑时序会变。
+录制视频的命令在上面基础上加 `--video video/q3_touch.mp4`；相机位置与注视点固定在 `touch_toy.py` 顶部的 `VIDEO_EYE` / `VIDEO_TARGET`。视频**未加速、未抽时**：物理步长为 Isaac 默认 1/60 秒，每 4 个物理步渲染一帧、按 15 fps 写出，4 × 1/60 = 1/15 秒，与仿真时间 1:1（847 帧 = 3388 步 = 56.5 秒）。四宫格与特写直接由这份视频抽帧生成（视频帧号 = 物理步数 ÷ 4），抽帧脚本不随作品提交。三个接触帧号是逐帧核验过的：先按“指尖与目标玩具颜色中心的像素距离”扫出候选区间，再逐帧放大核对指尖与玩具的间隙，最终取 216 / 519 / 819。软玩具一格使用的是手指已包住玩具、但还没抬起的一帧：腕部相机从画面上方遮住了手指与玩具的接触面，所以这一格不如魔方、恐龙两格直观；日志里同一时刻的距离是 0.0041 米、合拢力矩 0.322 N·m。注意帧号只对 `video/q3_touch.mp4` 这份视频有效，换一次重跑时序会变。
 
 ### 资源与风险
 
@@ -403,8 +431,8 @@ PASS  题三答案、日志与视频自检通过
 | 显存 | 官方最低 8 GB，实测 8 GB 可跑 headless；开 GUI 前建议关掉占显存的程序 |
 | 内存 | Isaac 常驻 8~12 GB，16 GB 机器上不要同时开浏览器与其它大程序 |
 | 磁盘 | Isaac Sim 本体不要装在根分区，答案与日志很小可直接进仓库 |
-| 运行耗时 | headless + 录视频一次约 168 秒（8 GB 显存，三个测例含物理稳定与保持等待）；图形模式另加 `--hold-sec` 的 90 秒 |
-| 不确定性 | 接触瞬间的摩擦与穿透由 PhysX 决定，重跑数值会小幅变化；判定用阈值而非固定值。同代码连续两次重跑距离差 0.0000 m，不同转运方案间最大差 1.3 cm |
+| 运行耗时 | headless + 录视频一次约 235 秒（8 GB 显存，三个测例含物理稳定、测例间过渡与保持等待）；图形模式另加 `--hold-sec` 的 90 秒 |
+| 不确定性 | 接触瞬间的摩擦与穿透由 PhysX 决定，重跑数值会小幅变化；判定用阈值而非固定值。同代码连续两次重跑距离差 ≤ 0.3 毫米，不同转运方案间最大差 1.3 cm |
 
 ## 演示与验证结果
 
@@ -414,7 +442,7 @@ PASS  题三答案、日志与视频自检通过
 | 二 | `python3 -m pytest -q src/question2_project/tests` | 用例全部通过（与官方 `demo_zero` 差 < 1e-6） | `assets/q2.log`、`assets/q2_viz.log`、`video/q2_rviz.mp4` |
 | 三 | `python3 src/question3_project/verify_q3.py`、`python3 -m pytest -q src/question3_project/tests` | 三个测例 PASS；用例全部通过 | `assets/q3.log`、`assets/q3_env.log`、`video/q3_touch.mp4`、`docs/q3_contact_sheet.png`、`docs/q3_contact_zoom.png` |
 
-题三实测（headless，每次重跑数值有小幅浮动）：魔方最终距离 0.0054 米、指力矩 1.622 N·m；恐龙 0.0039 米、0.433 N·m；软玩具 0.0041 米、0.294 N·m。三例均满足触碰判据，且都有 PhysX 接触对上报。视频与截图都是真实运行录制，未做任何合成。
+题三实测（headless，每次重跑数值有小幅浮动）：魔方最终距离 0.0054 米、指力矩 1.622 N·m；恐龙 0.0063 米、0.157 N·m；软玩具 0.0041 米、0.322 N·m。三例均满足触碰判据，且都有 PhysX 接触对上报。视频与截图都是真实运行录制，未做任何合成。
 
 ## 文件说明
 
