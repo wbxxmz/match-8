@@ -70,8 +70,15 @@ yanjiahao-luoyubin/
 │   ├── tests/test_gold.py    # 金标、语义不变量与自检用例
 │   └── tests/test_cross_validation.py # PyKDL 第二套实现交叉校验（含随机姿态）
 ├── src/question3_project/
+│   ├── touch_toy.py          # 入口：解析参数、串起各模块、写答案
+│   ├── config.py             # 常量：prim、抓取参数、运动帧数、视频与接触阈值
+│   ├── input_io.py           # 场景定位、输入校验、环境证据、测例过滤
+│   ├── contact.py            # 触碰判定口径与 PhysX 接触报告订阅
+│   ├── sim_runtime.py        # Isaac Sim 启动、物理推进、底盘锁定、录像
+│   ├── arm.py                # 关节动作原语：插值、过渡、下降、合拢
+│   ├── planning.py           # 目标点选择、多初值 IK、干跑预检
+│   ├── case_runner.py        # 单个测例的执行与答案组装
 │   ├── planner.py            # 底盘坐标变换、逆运动学、位姿换算（不依赖 Isaac）
-│   ├── touch_toy.py          # Isaac Sim 里置初值、下降触碰、合拢与写答案
 │   ├── verify_q3.py          # 离线自检：答案/FK/闭环/日志/视频，不依赖 Isaac
 │   ├── tests/test_planner.py # 规划回归测试：变换闭环、FK、IK 残差、限位与另一组初值
 │   └── tests/test_touch_logic.py # 触碰判定口径与输入校验（未知玩具、缺字段、非有限位姿）
@@ -451,7 +458,7 @@ PASS  题三答案、日志与视频自检通过
 | --- | --- |
 | `src/question1_project/` | 题一驱动、限位配置、RViz 配置与启动文件、自检与用例 |
 | `src/question2_project/` | 题二 FK 实现（`urdf_chain.py`、`transforms.py`、`fk.py`）、读写入口、可选可视化、内置模型副本与用例 |
-| `src/question3_project/` | 题三规划（`planner.py`）、Isaac 控制（`touch_toy.py`）、离线自检与用例 |
+| `src/question3_project/` | 题三规划（`planner.py`）、Isaac 控制（`touch_toy.py` 入口 + `sim_runtime.py`/`arm.py`/`planning.py`/`case_runner.py`）、离线自检与用例 |
 | `inputs/`、`answers/` | 官方示例输入与程序生成的答案，一一对应 |
 | `assets/` | 三份终端日志 |
 | `video/` | 演示视频：`q1_rviz.mp4`（题目一 RViz）、`q3_touch.mp4`（题目三 Isaac Sim 触碰）、`q2_rviz.mp4`（题目二可视化，可选，一并提供）；均为 MP4/MPEG-4，单个不超过 30 MB |
