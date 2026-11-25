@@ -94,47 +94,115 @@ def toy_pose_in_objects(objects_in_base, toy_in_base):
     return invert_transform(objects_in_base) @ toy_in_base
 
 
-def top_down_rotation(target_xyz):
-    """夹爪朝下的目标姿态：objects_link 的 +Z 指向世界 -Z，+X 指向目标水平方向。"""
-    z_axis = np.array([0.0, 0.0, -1.0])
-    horizontal = np.array([target_xyz[0], target_xyz[1], 0.0])
-    if np.linalg.norm(horizontal) < 1e-9:
-        horizontal = np.array([1.0, 0.0, 0.0])
-    x_axis = horizontal / np.linalg.norm(horizontal)
-    y_axis = np.cross(z_axis, x_axis)
+def grasp_frame(approach, finger_axis):
+    """由接近方向与手指张开方向构造抓取姿态。
+
+    `objects_link` 的 +X 是接近方向（从手腕指向指尖），+Y 是两指张开方向，
+    +Z 是手指转轴。finger_axis 会投影到垂直于 approach 的平面上。
+    """
+    x_axis = np.asarray(approach, dtype=float)
+    x_axis = x_axis / np.linalg.norm(x_axis)
+    y_axis = np.asarray(finger_axis, dtype=float)
+    y_axis = y_axis - np.dot(y_axis, x_axis) * x_axis
+    if np.linalg.norm(y_axis) < 1e-9:
+        y_axis = np.array([0.0, 1.0, 0.0]) - x_axis[1] * x_axis
+    y_axis = y_axis / np.linalg.norm(y_axis)
+    z_axis = np.cross(x_axis, y_axis)
     return np.column_stack([x_axis, y_axis, z_axis])
 
 
-def approach_rotation(target_xyz, tilt_deg=50.0, heading=None):
-    """斜向下抓姿态：在竖直朝下的基础上，把夹爪前方抬起来、朝向目标外侧倾斜。
+def front_grasp_rotation(target_xyz, tilt_deg=30.0):
+    """正面抓取：掌心朝玩具正面（水平指向玩具），略向下倾，两指沿水平横向张开。
 
-    heading 给出倾斜平面内的水平方向（默认“底座→目标”）；长条玩具传长轴方向，
-    让两指沿短轴合拢，避免手指顺着身体长度插到端部。
+    脸部朝侧面时，两指沿 y 张开、从左右两侧夹住正脸；指尖要落到玩具远侧，
+    让手指长度覆盖整个头部。纯水平时手腕关节几乎贴地（joint5 原点只剩 8 毫米），
+    下倾 30° 让手腕抬到 14 厘米，掌心仍以 x 分量为主。
     """
-    vertical = top_down_rotation(target_xyz)
-    if heading is None:
-        horizontal = np.array([target_xyz[0], target_xyz[1], 0.0])
-    else:
-        horizontal = np.array([heading[0], heading[1], 0.0])
+    horizontal = np.array([target_xyz[0], target_xyz[1], 0.0])
     if np.linalg.norm(horizontal) < 1e-9:
         horizontal = np.array([1.0, 0.0, 0.0])
     horizontal /= np.linalg.norm(horizontal)
-    axis = np.cross([0.0, 0.0, 1.0], horizontal)  # 水平且垂直于倾斜平面内的方向
-    axis /= np.linalg.norm(axis)
-    angle = math.radians(tilt_deg)
+    tilt = math.radians(tilt_deg)
+    approach = np.array([
+        horizontal[0] * math.cos(tilt),
+        horizontal[1] * math.cos(tilt),
+        -math.sin(tilt),
+    ])
+    return grasp_frame(approach, [0.0, 1.0, 0.0])
+
+
+def top_down_rotation(target_xyz):
+    """竖直朝下：+X 指向世界 -Z，两指沿目标水平径向张开。"""
+    horizontal = np.array([target_xyz[0], target_xyz[1], 0.0])
+    if np.linalg.norm(horizontal) < 1e-9:
+        horizontal = np.array([1.0, 0.0, 0.0])
+    return grasp_frame([0.0, 0.0, -1.0], horizontal)
+
+
+def top_down_side_rotation(short_axis):
+    """竖直朝下、两指沿指定水平短轴张开的姿态，用于长条玩具侧抱。
+
+    长条玩具若仍按径向张指，两指会卡在身体两端；这里把 +Y 转到短轴方向，
+    让两指从身体两侧包住上半身。
+    """
+    return grasp_frame([0.0, 0.0, -1.0], np.array([short_axis[0], short_axis[1], 0.0]))
+
+
+def yaw_rotation(rotation, angle_deg):
+    """绕竖直轴旋转抓取姿态，只改变两指张开的方位，不改变接近方向。"""
+    angle = math.radians(angle_deg)
     c, s = math.cos(angle), math.sin(angle)
-    skew = np.array([[0.0, -axis[2], axis[1]], [axis[2], 0.0, -axis[0]], [-axis[1], axis[0], 0.0]])
-    return (np.eye(3) - s * skew + (1.0 - c) * (skew @ skew)) @ vertical
+    yaw = np.array([[c, -s, 0.0], [s, c, 0.0], [0.0, 0.0, 1.0]])
+    return yaw @ rotation
+
+
+def approach_rotation(target_xyz, tilt_deg=50.0):
+    """斜向下抓：接近方向从竖直向下朝目标外侧倾斜，两指沿切向张开。
+
+    手腕留在目标外侧，手指从斜上方包住玩具，比纯竖直多留一点手腕余量。
+    """
+    horizontal = np.array([target_xyz[0], target_xyz[1], 0.0])
+    if np.linalg.norm(horizontal) < 1e-9:
+        horizontal = np.array([1.0, 0.0, 0.0])
+    horizontal /= np.linalg.norm(horizontal)
+    angle = math.radians(tilt_deg)
+    approach = math.cos(angle) * np.array([0.0, 0.0, -1.0]) + math.sin(angle) * horizontal
+    finger_axis = np.cross([0.0, 0.0, 1.0], horizontal)
+    return grasp_frame(approach, finger_axis)
 
 
 def rotation_error(current, target):
-    """旋转矩阵误差 → 旋转向量（小角度近似），用于 IK 的 6 维误差。"""
+    """旋转矩阵误差 → 旋转向量（轴角），对 180° 也有效。
+
+    只取反对称部分（`error[2,1]-error[1,2]` 等）在角度接近 180° 时会归零，
+    让 IK 误以为已经到位，实际手腕是反的。这里用轴角公式：一般情况按
+    sin(angle) 缩放，接近 180° 时改从对角元恢复转轴。
+    """
     error = target @ current.T
-    return 0.5 * np.array([
-        error[2, 1] - error[1, 2],
-        error[0, 2] - error[2, 0],
-        error[1, 0] - error[0, 1],
-    ])
+    cos_angle = float(np.clip((np.trace(error) - 1.0) / 2.0, -1.0, 1.0))
+    angle = math.acos(cos_angle)
+    if angle < 1e-9:
+        return np.zeros(3)
+    if angle < math.pi - 1e-4:
+        scale = angle / (2.0 * math.sin(angle))
+        return scale * np.array([
+            error[2, 1] - error[1, 2],
+            error[0, 2] - error[2, 0],
+            error[1, 0] - error[0, 1],
+        ])
+    # 180°：R = 2 a aᵀ - I，从最大对角元恢复转轴
+    index = int(np.argmax(np.diag(error)))
+    axis = np.zeros(3)
+    axis[index] = math.sqrt(max((error[index, index] + 1.0) / 2.0, 0.0))
+    if axis[index] < 1e-8:
+        return np.array([angle, 0.0, 0.0])
+    for other in range(3):
+        if other != index:
+            axis[other] = error[other, index] / (2.0 * axis[index])
+    norm = float(np.linalg.norm(axis))
+    if norm < 1e-9:
+        return np.zeros(3)
+    return angle * axis / norm
 
 
 def solve_ik(chain, target_xyz, target_rot, seed, limits, iters=MAX_ITERS):
@@ -157,10 +225,12 @@ def solve_ik(chain, target_xyz, target_rot, seed, limits, iters=MAX_ITERS):
             probe[name] += 1e-5
             probe_transform = objects_link_transform(chain, probe)
             jacobian[:3, index] = (probe_transform[:3, 3] - transform[:3, 3]) / 1e-5
-            jacobian[3:, index] = rotation_error(probe_transform[:3, :3], transform[:3, :3]) / 1e-5
+            # 与位置列同号约定：J = -d(误差)/dq，解 J·δ = 误差。
+            jacobian[3:, index] = 0.3 * rotation_error(
+                transform[:3, :3], probe_transform[:3, :3]
+            ) / 1e-5
         # 姿态误差放权 0.3，避免为了转手腕牺牲位置精度。
         error = np.concatenate([pos_error, 0.3 * ori_error])
-        jacobian[3:] *= 0.3
         delta = jacobian.T @ np.linalg.solve(
             jacobian @ jacobian.T + (damping ** 2) * np.eye(6), error
         )
@@ -202,11 +272,14 @@ def solve_best(chain, target_xyz, target_rot, seeds, limits, posture=None):
     for seed in seeds:
         state, pos_error, ori_error = solve_ik(chain, target_xyz, target_rot, seed, limits)
         good = pos_error <= 1e-3 and ori_error <= 5e-3
+        below = link_origins_below_floor(chain, {**CHAIN_FILLER, **state})
         if good and posture:
             cost = float(sum((state[k] - v) ** 2 for k, v in posture.items() if k in state))
         else:
             cost = float("inf")
-        candidates.append((0 if good else 1, cost, pos_error, state, ori_error))
+        # 先保证不穿地，再比与标称姿态的偏差。
+        rank = 0 if (good and not below) else 1
+        candidates.append((rank, cost, pos_error, state, ori_error))
     _, _, pos_error, state, ori_error = min(candidates, key=lambda item: item[:3])
     return state, pos_error, ori_error
 

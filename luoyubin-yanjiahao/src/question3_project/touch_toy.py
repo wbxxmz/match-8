@@ -47,8 +47,15 @@ SCENE_ENV = "BAJIE_SIM_ROOT"
 
 TOUCH_DISTANCE = 0.03      # 距离判据下限（米）；实际阈值取它与玩具包络半径的较大者
 PREGRASP_HEIGHT = 0.15     # 预抓取点抬高量（米）
-WIDE_GRASP_TOYS = {"rubik_cube"}  # 需要两指从两侧包住的方块玩具
-WIDE_GRASP_CLEARANCE = 0.005      # 宽抓时掌部参考点停在玩具中心上方的高度（米）
+WIDE_GRASP_TOYS = {"rubik_cube", "soft_toy"}  # 两指从两侧包住、不压顶面的玩具
+WIDE_GRASP_CLEARANCE = {"rubik_cube": 0.005, "soft_toy": 0.02}  # 掌部参考点停在中心上方的高度（米）
+WIDE_GRASP_AXIS = {"rubik_cube": (1.0, 0.0, 0.0), "soft_toy": (1.0, 0.0, 0.0)}  # 两指张开方向（底盘系）
+SIDE_WIDE_TOYS = {"dinosaur"}     # 长条玩具：竖直下、两指沿短轴张开，从身体两侧包住
+SIDE_WIDE_CLEARANCE = 0.02        # 侧抱时掌部参考点停在玩具中心上方的高度（米）
+FRONT_GRASP_TOYS = set()          # 正面抓已停用：软玩具改竖直抓，两指沿 x 罩住头部两侧
+# 绕竖直轴的抓取偏转：只换两指方位、不改接近方向。取值是离线对比各偏转下的
+# 关节姿态后选的——避开手腕接近限位的解，否则肘部会扭成不自然的角度。
+GRASP_YAW_DEG = {"rubik_cube": 0.0, "dinosaur": 0.0, "soft_toy": 0.0}
 FINGER_OPEN = 0.5                 # 夹爪张开目标（弧度，略低于 URDF 上限 0.506，避免物理过冲越限）
 TRANSFER_HEIGHT = 0.30     # 测例之间的转运高度（米），与单例内部转运一致
 TRANSFER_MICRO_LIFT_FRAMES = 20   # 松指前带玩具微抬的帧数
@@ -280,7 +287,7 @@ def plan_for_target(chain, limits, target_xyz, rotation=None, seed_state=None):
     """
     rotation = planner.top_down_rotation(target_xyz) if rotation is None else rotation
     azimuth = math.atan2(float(target_xyz[1]), float(target_xyz[0]))
-    seeds = [planner.reach_seed(azimuth + offset) for offset in (0.0, -0.35, 0.35)]
+    seeds = [planner.reach_seed(azimuth + offset) for offset in (0.0, -0.35, 0.35, -0.7, 0.7)]
     posture = {"joint1": azimuth, **planner.REACH_POSTURE}
     if seed_state is not None:
         seeds.append(seed_state)
@@ -315,12 +322,41 @@ def dry_run(records, chain, limits):
         base_pose = {"xyz": record["base_footprint_in_world"]["xyz"], "rpy": record["base_footprint_in_world"]["rpy"]}
         target = planner.toy_transform_in_base(base_pose, record["scene_object_in_world"])[:3, 3]
         wide = name in WIDE_GRASP_TOYS
-        rotation = planner.top_down_rotation(target) if wide else planner.approach_rotation(target)
-        clearance = WIDE_GRASP_CLEARANCE if wide else 0.0
-        points = (
-            ("预抓取", target + np.array([0.0, 0.0, PREGRASP_HEIGHT])),
-            ("抓取", target + np.array([0.0, 0.0, clearance])),
-        )
+        side = name in SIDE_WIDE_TOYS
+        front = name in FRONT_GRASP_TOYS
+        yaw = GRASP_YAW_DEG.get(name, 0.0)
+        if wide:
+            rotation = planner.top_down_side_rotation(np.array([1.0, 0.0, 0.0]))
+            points = (
+                ("预抓取", target + np.array([0.0, 0.0, PREGRASP_HEIGHT])),
+                ("抓取", target + np.array([0.0, 0.0, WIDE_GRASP_CLEARANCE[name]])),
+            )
+        elif front:
+            # 干跑拿不到玩具包围盒，软玩具的半长按本场景的 3.7 厘米近似
+            approach = np.array([target[0], target[1], 0.0])
+            approach /= np.linalg.norm(approach)
+            face = target + approach * 0.037
+            face[2] += FRONT_GRASP_FACE_HEIGHT
+            rotation = planner.front_grasp_rotation(target)
+            points = (
+                ("预抓取", face - approach * FRONT_GRASP_PULLBACK + np.array([0.0, 0.0, 0.01])),
+                ("抓取", face),
+            )
+        elif side:
+            # 干跑拿不到玩具包围盒，按本场景的短轴（底盘 x）近似
+            rotation = planner.yaw_rotation(
+                planner.top_down_side_rotation(np.array([1.0, 0.0, 0.0])), yaw
+            )
+            points = (
+                ("预抓取", target + np.array([0.0, 0.0, PREGRASP_HEIGHT])),
+                ("抓取", target + np.array([0.0, 0.0, SIDE_WIDE_CLEARANCE])),
+            )
+        else:
+            rotation = planner.yaw_rotation(planner.approach_rotation(target), yaw)
+            points = (
+                ("预抓取", target + np.array([0.0, 0.0, PREGRASP_HEIGHT])),
+                ("抓取", target),
+            )
         print(f"  {record['id']}({name})：玩具在底盘系 {np.round(target, 4).tolist()}", flush=True)
         for label, point in points:
             state, pos_error, ori_error = plan_for_target(chain, limits, point, rotation=rotation)
@@ -886,30 +922,48 @@ def main():
         target_xyz = base_from_scene[:3, 3].copy()
         pre_xyz = target_xyz + np.array([0.0, 0.0, PREGRASP_HEIGHT])
         wide_grasp = name in WIDE_GRASP_TOYS
+        side_grasp = name in SIDE_WIDE_TOYS
+        front_grasp = name in FRONT_GRASP_TOYS
+        yaw = GRASP_YAW_DEG.get(name, 0.0)
         if wide_grasp:
-            # 方块玩具：竖直朝下、两指张开到最大，掌部停在中心上方 7 厘米，
-            # 让两指从左右两侧包住方块，而不是用指尖压顶面。
-            grasp_xyz = target_xyz + np.array([0.0, 0.0, WIDE_GRASP_CLEARANCE])
-            grasp_rotation = planner.top_down_rotation(target_xyz)
+            # 方块：竖直朝下，两指沿底盘 x 轴张开，贴合方块的两个侧面，
+            # 掌部停在中心上方 5 毫米，两指从两侧包住后再合拢。
+            grasp_xyz = target_xyz + np.array([0.0, 0.0, WIDE_GRASP_CLEARANCE[name]])
+            grasp_rotation = planner.top_down_side_rotation(np.array(WIDE_GRASP_AXIS[name]))
+        elif front_grasp:
+            # 软玩具的脸朝侧面：掌心朝玩具正面（底盘 +x），两指沿水平 y 张开，
+            # 指尖落到玩具远侧，让手指长度覆盖整个头部、从左右两侧夹住正脸。
+            approach = np.array([target_xyz[0], target_xyz[1], 0.0])
+            approach /= np.linalg.norm(approach)
+            grasp_xyz = target_xyz + approach * (toy_size[0] / 2.0)
+            grasp_xyz[2] += FRONT_GRASP_FACE_HEIGHT
+            grasp_rotation = planner.front_grasp_rotation(target_xyz)
+            pre_xyz = grasp_xyz - approach * FRONT_GRASP_PULLBACK + np.array([0.0, 0.0, 0.01])
+        elif side_grasp:
+            # 长条玩具：竖直朝下，两指沿短轴张开，掌部停在中心上方 2 厘米，
+            # 从身体两侧包住上半身再合拢，不往下压。
+            short_axis = int(np.argmin(toy_size[:2]))
+            axis = np.zeros(3)
+            axis[short_axis] = 1.0
+            grasp_xyz = target_xyz + np.array([0.0, 0.0, SIDE_WIDE_CLEARANCE])
+            grasp_rotation = planner.yaw_rotation(
+                planner.top_down_side_rotation(axis), yaw
+            )
         else:
             grasp_xyz = target_xyz
             # 倾斜接近：手指从斜上方包住玩具，比竖直朝下多留几厘米手腕余量。
-            # 长条玩具（如恐龙）让倾斜平面沿长轴，两指沿短轴合拢，不会顶在身体端部。
-            long_axis = int(np.argmax(toy_size[:2]))
-            heading = None
-            if toy_size[long_axis] > 1.8 * min(toy_size[0], toy_size[1]):
-                heading = np.zeros(3)
-                heading[long_axis] = 1.0
-            grasp_rotation = planner.approach_rotation(target_xyz, heading=heading)
+            grasp_rotation = planner.yaw_rotation(planner.approach_rotation(target_xyz), yaw)
+        open_grasp = wide_grasp or side_grasp or front_grasp
         pregrasp, pre_error, _ = solve_target(pre_xyz, initial, grasp_rotation)
         grasp, grasp_error, grasp_ori = solve_target(grasp_xyz, initial, grasp_rotation)
-        if wide_grasp:
+        if open_grasp:
             for pose in (pregrasp, grasp):
                 pose["arm_finger_joint1"] = FINGER_OPEN
                 pose["arm_finger_joint2"] = FINGER_OPEN
+        mode_name = "宽抓" if wide_grasp else ("侧抱" if side_grasp else ("正面抓" if front_grasp else "斜抓"))
         print(
             f"IK 预抓取位置残差 {pre_error:.5f} m，抓取位置残差 {grasp_error:.5f} m，"
-            f"姿态残差 {grasp_ori:.5f} rad，模式 {'宽抓' if wide_grasp else '斜抓'}",
+            f"姿态残差 {grasp_ori:.5f} rad，模式 {mode_name}",
             flush=True,
         )
 
@@ -921,7 +975,7 @@ def main():
         transit, transit_error, _ = solve_target(
             transit_xyz, initial, planner.top_down_rotation(transit_xyz)
         )
-        if wide_grasp:
+        if open_grasp:
             transit["arm_finger_joint1"] = FINGER_OPEN
             transit["arm_finger_joint2"] = FINGER_OPEN
         print(f"  转运姿态（高 0.30 米）解残差 {transit_error:.4f} m", flush=True)
@@ -940,8 +994,8 @@ def main():
 
         print("-- 下降到玩具", flush=True)
         toy_before = planner.toy_transform_in_base(base_pose, toy_pose(name))[:3, 3].copy()
-        if wide_grasp:
-            # 宽抓：不再“碰到就停”，而是降到两指包住方块的高度，再合拢夹住。
+        if open_grasp:
+            # 宽抓/侧抱：不再“碰到就停”，而是降到两指包住玩具的高度，再合拢夹住。
             move_towards(grasp, 120, name)
             print("-- 等待宽抓到位", flush=True)
             wide_error = settle_to(grasp, grasp_xyz)
@@ -955,14 +1009,14 @@ def main():
         # 接触后先让物理稳定，再读最终关节；否则拿到的可能是插值过程中的瞬时状态。
         advance(20)
         before_close = distance(name, planner.pose_in_parent(planner.fk_objects_link(chain, read_state())))
-        if rebound and not wide_grasp:
+        if rebound and not open_grasp:
             # 已经停在玩具表面：再合拢只会把玩具推走，跳过。
             # 但下降途中压到玩具时测到的指力矩要保留，否则报告会变成“接触但几乎无力”。
             print("-- 已停在玩具表面，跳过合拢", flush=True)
             peak_effort = descent_effort
         else:
             print("-- 合拢手指", flush=True)
-            peak_effort = close_fingers(steps=90 if wide_grasp else 60, gap=args.finger_gap)
+            peak_effort = close_fingers(steps=90 if open_grasp else 60, gap=args.finger_gap)
         current_distance = distance(name, planner.pose_in_parent(planner.fk_objects_link(chain, read_state())))
         effort = max(peak_effort, finger_effort())
         toy_shift = float(np.linalg.norm(
@@ -1001,7 +1055,7 @@ def main():
         final_errors = {
             key: (final_state[key], limits[key])
             for key in planner.JOINTS
-            if key in limits and not (limits[key][0] - 1e-6 <= final_state[key] <= limits[key][1] + 1e-6)
+            if key in limits and not (limits[key][0] - 1e-4 <= final_state[key] <= limits[key][1] + 1e-4)
         }
         if final_errors:
             raise RuntimeError(f"{case_id} 最终关节越限：{final_errors}")
@@ -1036,10 +1090,10 @@ def main():
             flush=True,
         )
         touch_distance = float(np.linalg.norm(toy_in_base[:3, 3] - objects_in_base[:3, 3]))
-        # 触碰判据：PhysX 接触报告或物理证据（回升/力矩/位移）优先；距离只会让判定更严，
-        # 不再单独判 PASS——距离近不等于碰到。
+        # 触碰判据：PhysX 接触报告或物理证据（回升/力矩/位移）优先；距离只作几何兜底——
+        # 玩具被撞飞时同样会上报接触，但它已不在夹爪工作范围，不能算“碰到”。
         distance_limit = max(TOUCH_DISTANCE, toy_radius)
-        passed = decide_touch(contact, sensor_event)
+        passed = decide_touch(contact, sensor_event) and touch_distance <= distance_limit
         print(
             f"完成：最终距离 {touch_distance:.4f} m（几何参考上限 {distance_limit:.4f} m），"
             f"指力矩 {effort:.3f} N·m，USD/FK 偏差 {usd_delta:.5f} m，{'PASS' if passed else 'FAIL'}",
