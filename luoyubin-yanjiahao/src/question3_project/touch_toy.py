@@ -49,10 +49,12 @@ TOUCH_DISTANCE = 0.03      # 距离判据下限（米）；实际阈值取它与
 PREGRASP_HEIGHT = 0.15     # 预抓取点抬高量（米）
 WIDE_GRASP_TOYS = {"rubik_cube", "soft_toy"}  # 两指从两侧包住、不压顶面的玩具
 WIDE_GRASP_CLEARANCE = {"rubik_cube": 0.005, "soft_toy": 0.02}  # 掌部参考点停在中心上方的高度（米）
-WIDE_GRASP_AXIS = {"rubik_cube": (1.0, 0.0, 0.0), "soft_toy": (1.0, 0.0, 0.0)}  # 两指张开方向（底盘系）
+WIDE_GRASP_AXIS = {"rubik_cube": (1.0, 0.0, 0.0), "soft_toy": (0.0, 1.0, 0.0)}  # 两指张开方向（底盘系）
 SIDE_WIDE_TOYS = {"dinosaur"}     # 长条玩具：竖直下、两指沿短轴张开，从身体两侧包住
 SIDE_WIDE_CLEARANCE = 0.02        # 侧抱时掌部参考点停在玩具中心上方的高度（米）
-FRONT_GRASP_TOYS = set()          # 正面抓已停用：软玩具改竖直抓，两指沿 x 罩住头部两侧
+FRONT_GRASP_TOYS = set()          # 正面抓停用：40° 下倾会把轻质玩具推转 45°
+FRONT_GRASP_PULLBACK = 0.12       # 正面抓的预抓取点沿接近方向后退的距离（米）
+FRONT_GRASP_FACE_HEIGHT = 0.02    # 正面抓的指尖目标比玩具中心高出的量（米，对准面部）
 # 绕竖直轴的抓取偏转：只换两指方位、不改接近方向。取值是离线对比各偏转下的
 # 关节姿态后选的——避开手腕接近限位的解，否则肘部会扭成不自然的角度。
 GRASP_YAW_DEG = {"rubik_cube": 0.0, "dinosaur": 0.0, "soft_toy": 0.0}
@@ -335,7 +337,7 @@ def dry_run(records, chain, limits):
             # 干跑拿不到玩具包围盒，软玩具的半长按本场景的 3.7 厘米近似
             approach = np.array([target[0], target[1], 0.0])
             approach /= np.linalg.norm(approach)
-            face = target + approach * 0.037
+            face = target - approach * 0.037
             face[2] += FRONT_GRASP_FACE_HEIGHT
             rotation = planner.front_grasp_rotation(target)
             points = (
@@ -931,11 +933,11 @@ def main():
             grasp_xyz = target_xyz + np.array([0.0, 0.0, WIDE_GRASP_CLEARANCE[name]])
             grasp_rotation = planner.top_down_side_rotation(np.array(WIDE_GRASP_AXIS[name]))
         elif front_grasp:
-            # 软玩具的脸朝侧面：掌心朝玩具正面（底盘 +x），两指沿水平 y 张开，
-            # 指尖落到玩具远侧，让手指长度覆盖整个头部、从左右两侧夹住正脸。
+            # 软玩具：掌心朝脸部（底盘 +x），两指沿水平 y 张开，
+            # 指尖落在朝向机器人的那个面上，夹住脸部左右两侧而不是头两侧。
             approach = np.array([target_xyz[0], target_xyz[1], 0.0])
             approach /= np.linalg.norm(approach)
-            grasp_xyz = target_xyz + approach * (toy_size[0] / 2.0)
+            grasp_xyz = target_xyz - approach * (toy_size[0] / 2.0)
             grasp_xyz[2] += FRONT_GRASP_FACE_HEIGHT
             grasp_rotation = planner.front_grasp_rotation(target_xyz)
             pre_xyz = grasp_xyz - approach * FRONT_GRASP_PULLBACK + np.array([0.0, 0.0, 0.01])

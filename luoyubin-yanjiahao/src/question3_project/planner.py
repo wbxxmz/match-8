@@ -111,12 +111,12 @@ def grasp_frame(approach, finger_axis):
     return np.column_stack([x_axis, y_axis, z_axis])
 
 
-def front_grasp_rotation(target_xyz, tilt_deg=30.0):
+def front_grasp_rotation(target_xyz, tilt_deg=40.0):
     """正面抓取：掌心朝玩具正面（水平指向玩具），略向下倾，两指沿水平横向张开。
 
     脸部朝侧面时，两指沿 y 张开、从左右两侧夹住正脸；指尖要落到玩具远侧，
     让手指长度覆盖整个头部。纯水平时手腕关节几乎贴地（joint5 原点只剩 8 毫米），
-    下倾 30° 让手腕抬到 14 厘米，掌心仍以 x 分量为主。
+    下倾 40° 让手腕抬到 15 厘米，掌心仍以 x 分量为主。
     """
     horizontal = np.array([target_xyz[0], target_xyz[1], 0.0])
     if np.linalg.norm(horizontal) < 1e-9:

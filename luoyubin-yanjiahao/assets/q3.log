@@ -1,7 +1,7 @@
 环境  OS Linux-6.8.0-149-generic-x86_64-with-glibc2.35
 环境  Python 3.10.15  numpy 1.26.0
 环境  ROS_DISTRO humble  ROS_DOMAIN_ID unset
-环境  git 024bb46
+环境  git 6c65038
 环境  GPU NVIDIA GeForce RTX 4060 Laptop GPU, 580.178.04
 环境  Isaac Sim 4.5.0-rc.36+release.19112.f59b3005.gl
 场景： /home/yjh/bajie-competition/sim/scene/abr_scene.usd
@@ -80,28 +80,30 @@ touch_toy_3 (soft_toy) ===
 初值读回最大误差 0.000021 rad/m
 玩具在底盘系：输入 [0.5599, 0.0692, 0.0519]，场景 [0.5599, 0.0692, 0.0519]，差 0.0000 m
 玩具包围盒尺寸 [0.0738, 0.0566, 0.102] m，半对角线 0.0690 m
-IK 预抓取位置残差 0.00010 m，抓取位置残差 0.00001 m，姿态残差 0.00006 rad，模式 宽抓
+IK 预抓取位置残差 0.00001 m，抓取位置残差 0.00010 m，姿态残差 0.00045 rad，模式 宽抓
 转运姿态（高 0.30 米）解残差 0.0001 m
 -- 抬升并转向玩具
 -- 下降到预抓取
 -- 等待预抓取到位
-预抓取到位误差 0.0001 m
+预抓取到位误差 0.0000 m
 -- 下降到玩具
 -- 等待宽抓到位
-宽抓到位误差 0.0000 m
+宽抓到位误差 0.0001 m
 -- 合拢手指
-合拢 010/90 指力矩 0.014 N·m
-合拢 020/90 指力矩 0.014 N·m
-合拢到第 24 步夹住玩具：力矩 0.289 N·m
-PhysX 接触对 ['/World/abr_machine/robot_root/gripper/gripper_right_link', '/World/company/toys/spiderman_grasp'] 分离 0.000195 m，冲量 0.000060 N·s
-接触距离 0.0197 m（合拢前 0.0200 m，最优 0.0198 m，触底回升 否，峰值指力矩 0.339 N·m，玩具位移 0.1 mm，接触 有）
-指关节力矩 {'arm_finger_joint1': -0.3393, 'arm_finger_joint2': -0.2647}
+合拢 010/90 指力矩 0.015 N·m
+合拢 020/90 指力矩 0.015 N·m
+合拢 030/90 指力矩 0.015 N·m
+合拢 040/90 指力矩 0.015 N·m
+合拢到第 44 步夹住玩具：力矩 0.651 N·m
+PhysX 接触对 ['/World/abr_machine/robot_root/gripper/gripper_right_link', '/World/company/toys/spiderman_grasp'] 分离 0.000223 m，冲量 0.000142 N·s
+接触距离 0.0196 m（合拢前 0.0200 m，最优 0.0200 m，触底回升 否，峰值指力矩 0.651 N·m，玩具位移 4.2 mm，接触 有）
+指关节力矩 {'arm_finger_joint1': -0.461, 'arm_finger_joint2': -0.5362}
 底盘位移 0.0000 m
-玩具位姿：主字段按题面输入（rpy=0）计算，仿真实测另存；两者相差 0.0007 m / +0.4°（资产自带旋转 + 触碰推动所致）
-完成：最终距离 0.0197 m（几何参考上限 0.0690 m），指力矩 0.339 N·m，USD/FK 偏差 0.00004 m，PASS
+玩具位姿：主字段按题面输入（rpy=0）计算，仿真实测另存；两者相差 0.0043 m / +0.5°（资产自带旋转 + 触碰推动所致）
+完成：最终距离 0.0196 m（几何参考上限 0.0690 m），指力矩 0.651 N·m，USD/FK 偏差 0.00012 m，PASS
 已写入 3 行 -> answers/q3_demo_output.jsonl
-视频已写出 -> video/q3_touch.mp4（3562 个物理步）
+视频已写出 -> video/q3_touch.mp4（3602 个物理步）
 结果汇总：
 touch_toy_1: 最终距离 0.0046 m，接触 True，PhysX 接触报告 有，指力矩 0.277 N·m，玩具位移 0.7 mm
 touch_toy_2: 最终距离 0.0194 m，接触 True，PhysX 接触报告 有，指力矩 0.676 N·m，玩具位移 0.3 mm
-touch_toy_3: 最终距离 0.0197 m，接触 True，PhysX 接触报告 有，指力矩 0.339 N·m，玩具位移 0.1 mm
+touch_toy_3: 最终距离 0.0196 m，接触 True，PhysX 接触报告 有，指力矩 0.651 N·m，玩具位移 4.2 mm
