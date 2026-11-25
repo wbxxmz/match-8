@@ -1,0 +1,7 @@
+# 运行产物与缓存，不提交
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+.DS_Store
+*.swp
