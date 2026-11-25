@@ -9,7 +9,7 @@
 | 作品版本 | v1.0（2026-11-24） |
 | 运行平台 | ROS 2 Humble（题一、题二）；Isaac Sim 4.5（题三） |
 
-所有命令都在作品根目录执行：从比赛仓库根目录先 `cd yanjiahao-luoyubin`。题二不依赖 ROS 运行时，只需 Python 3.10、`numpy` 与 `xacro`；题三需要 Isaac Sim 4.5。
+所有命令都在作品根目录执行：从比赛仓库根目录先 `cd luoyubin-yanjiahao`。题二不依赖 ROS 运行时，只需 Python 3.10、`numpy` 与 `xacro`；题三需要 Isaac Sim 4.5。
 
 ## 应用场景与目标
 
@@ -42,12 +42,12 @@ sudo apt-get install -y ros-humble-robot-state-publisher ros-humble-rviz2 ros-hu
 source /opt/ros/humble/setup.bash
 ```
 
-以下所有命令默认当前目录为作品根目录 `yanjiahao-luoyubin/`（克隆比赛仓库后先执行 `cd yanjiahao-luoyubin`）。
+以下所有命令默认当前目录为作品根目录 `luoyubin-yanjiahao/`（克隆比赛仓库后先执行 `cd luoyubin-yanjiahao`）。
 
 ## 目录
 
 ```
-yanjiahao-luoyubin/
+luoyubin-yanjiahao/
 ├── README.md
 ├── PROJECT.md                # 题二设计说明（FK 推导与验证）
 ├── src/question1_project/
@@ -110,11 +110,11 @@ ros2 launch src/question1_project/launch/q1.launch.py
 想手动控制驱动（先在终端 A 启动 RViz，再在终端 B 发指令）：
 
 ```bash
-# 终端 A（作品根目录 yanjiahao-luoyubin/）
+# 终端 A（作品根目录 luoyubin-yanjiahao/）
 source /opt/ros/humble/setup.bash
 ros2 launch src/question1_project/launch/q1.launch.py driver:=false
 
-# 终端 B（作品根目录 yanjiahao-luoyubin/）
+# 终端 B（作品根目录 luoyubin-yanjiahao/）
 source /opt/ros/humble/setup.bash
 python3 src/question1_project/q1_driver.py \
   --input inputs/q1_demo_input.jsonl \
@@ -189,7 +189,7 @@ python3 -m pytest -q src/question1_project/tests
 
 ```bash
 python3 -c "import json; [json.loads(l) for l in open('answers/q1_demo_output.jsonl')]"
-bash ../validate-entry-submission.sh yanjiahao-luoyubin
+bash ../validate-entry-submission.sh luoyubin-yanjiahao
 ```
 
 ### 素材
@@ -281,7 +281,7 @@ RViz 中橙色方块为场景物体，红色圆点为 `objects_link`，三色箭
 
 ### 复现步骤
 
-需要 Isaac Sim 4.5（官方场景 `sim/scene/abr_scene.usd`）与 ROS 2 Humble。所有命令在作品根目录 `yanjiahao-luoyubin/` 执行：
+需要 Isaac Sim 4.5（官方场景 `sim/scene/abr_scene.usd`）与 ROS 2 Humble。所有命令在作品根目录 `luoyubin-yanjiahao/` 执行：
 
 ```bash
 source /opt/ros/humble/setup.bash

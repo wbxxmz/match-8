@@ -49,5 +49,5 @@
 [python3-3] 关键帧 arm: lift_joint=0.178, pitch_joint=-0.290, joint1=0.302, joint2=-0.457, joint3=-0.132, joint4=-0.134, joint5=-0.554, joint6=0.007, arm_finger_joint1=0.000, arm_finger_joint2=0.000
 [python3-3] 关键帧 gripper_open: lift_joint=0.178, pitch_joint=-0.290, joint1=0.302, joint2=-0.457, joint3=-0.132, joint4=-0.134, joint5=-0.554, joint6=0.007, arm_finger_joint1=0.506, arm_finger_joint2=0.506
 [python3-3] 关键帧 gripper_close: lift_joint=0.178, pitch_joint=-0.290, joint1=0.302, joint2=-0.457, joint3=-0.132, joint4=-0.134, joint5=-0.554, joint6=0.007, arm_finger_joint1=0.000, arm_finger_joint2=0.000
-[python3-3] 已写入 1 行 -> /home/yjh/bajie-competition/competition/yanjiahao-luoyubin/answers/q1_demo_output.jsonl
+[python3-3] 已写入 1 行 -> /home/yjh/bajie-competition/competition/luoyubin-yanjiahao/answers/q1_demo_output.jsonl
 [INFO] [python3-3]: process has finished cleanly [pid 8836]

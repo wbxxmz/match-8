@@ -19,7 +19,7 @@ from fk import objects_link_transform
 from transforms import invert_transform, make_transform, pose_from_transform
 from urdf_chain import XACRO_RELATIVE, load_chain
 
-# 作品根目录：src/question2_project/run_q2.py 往上 3 层是 yanjiahao-luoyubin。
+# 作品根目录：src/question2_project/run_q2.py 往上 3 层是 luoyubin-yanjiahao。
 PROJECT_DIR = Path(__file__).resolve().parent
 ENTRY_ROOT = PROJECT_DIR.parents[1]
 # 官方 xacro 源码的内置副本（不含 mesh，约 45 KB），官方资源仓库不在时兜底。
